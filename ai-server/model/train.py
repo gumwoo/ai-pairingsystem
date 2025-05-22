@@ -11,6 +11,7 @@ import random
 from dataset import map_graph_nodes, edges_index, BPRDataset
 from plot import test_visualization, all_score_visualization
 from models import NeuralCF
+from utils import evaluate_precision_recall_k_multi
 
 def set_seed(seed=123):
     random.seed(seed)
@@ -21,7 +22,7 @@ def set_seed(seed=123):
     torch.backends.cudnn.benchmark = False
 
 class EarlyStopping:
-    def __init__(self, patience=10, delta=0):
+    def __init__(self, patience=5, delta=0):
         self.patience = patience
         self.delta = delta
         self.best_score = None
@@ -42,7 +43,7 @@ class EarlyStopping:
 def bpr_loss(pos_scores, neg_scores):
     return -torch.mean(torch.log(torch.sigmoid(pos_scores - neg_scores) + 1e-10))
 
-def train_model(model, train_loader, val_loader, edges_index, edges_weights, edges_type, num_epochs=10, lr=0.0002, weight_decay=1e-5):
+def train_model(model, train_loader, val_loader, edges_index, edges_weights, edges_type, num_epochs=10, lr=0.0005, weight_decay=1e-5):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     torch.manual_seed(123)
     
@@ -55,7 +56,7 @@ def train_model(model, train_loader, val_loader, edges_index, edges_weights, edg
 
     #criterion = bpr_loss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    early_stopping = EarlyStopping(patience=10, delta=0.001)
+    early_stopping = EarlyStopping(patience=5, delta=0.001)
 
     best_model = None
     best_val_loss = float('inf')
@@ -95,6 +96,7 @@ def train_model(model, train_loader, val_loader, edges_index, edges_weights, edg
             hard_neg = neg_candidates[torch.arange(user.size(0)), hard_neg_indices[torch.arange(user.size(0)), random_idx]]
 
             neg_output = model(user, hard_neg, edges_index, edges_type, edges_weights)
+            
             loss = bpr_loss(pos_output, neg_output)
             #loss = criterion(output, label)
 
@@ -139,7 +141,7 @@ def train_model(model, train_loader, val_loader, edges_index, edges_weights, edg
         val_acc = val_correct / val_total
         
         print(f"[Validation] Loss: {avg_val_loss:.4f} | Accuracy: {val_acc:.4f}")
-        torch.save(model.state_dict(), f"./model/checkpoint/epoch_{epoch}.pth")
+        #torch.save(model.state_dict(), f"./model/checkpoint/epoch_{epoch}.pth")
         
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
@@ -217,5 +219,10 @@ if __name__ == "__main__":
 
     model.load_state_dict(torch.load("./model/checkpoint/best_model.pth"))
     test_visualization(model, test_loader,edges_indexes, edges_weights, edges_type)
+    
+    dataset = BPRDataset(positive_pairs=positive_pairs, hard_negatives=negative_pairs, num_users=155, num_items=6498)
+    loader = DataLoader(dataset, batch_size=64, shuffle=False)
+    
+    evaluate_precision_recall_k_multi(model, loader, edges_indexes, edges_type, edges_weights, num_items=6498)
 
     #all_score_visualization(edges_indexes, edges_weights, edges_type)

@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 import random
 from models import NeuralCF
 from dataset import map_graph_nodes
+from utils import smoothed_scaled_score
 
 def plot_score_distribution(pos_score, neg_score, title="Score Distribution"):
     """
