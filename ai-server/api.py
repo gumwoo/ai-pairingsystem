@@ -87,7 +87,14 @@ async def startup_event():
         edges_indexes, edges_weights, edge_type = edges_index(edge_type_map)
         
         print("Loading model...")
-        model = NeuralCF(num_users=155, num_items=6498, emb_size=128)
+        model = NeuralCF(
+            num_users=155,
+            num_items=6498,
+            emb_size=128,
+            edge_index=edges_indexes,
+            edge_type=edge_type,
+            edge_weight=edges_weights
+        )
         model.load_state_dict(torch.load("./model/checkpoint/best_model.pth", map_location=torch.device('cpu')))
         model.eval()
         
@@ -129,10 +136,7 @@ async def predict_pairing(request: PairingRequest):
         with torch.no_grad():
             score = model(
                 torch.tensor([liquor_idx]), 
-                torch.tensor([ingredient_idx]), 
-                edges_indexes, 
-                edge_type, 
-                edges_weights
+                torch.tensor([ingredient_idx])
             ).item()
         
         # Generate explanation (in a real system, this would be more sophisticated)
@@ -176,10 +180,7 @@ async def recommend_ingredients(request: RecommendationRequest):
         with torch.no_grad():
             scores = model(
                 liquor_tensor, 
-                ingredient_tensor, 
-                edges_indexes, 
-                edge_type, 
-                edges_weights
+                ingredient_tensor
             ).numpy()
         
         # Get top N ingredients
