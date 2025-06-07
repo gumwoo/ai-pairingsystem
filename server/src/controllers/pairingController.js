@@ -4,25 +4,62 @@ const Liquor = require('../models/Liquor');
 const Ingredient = require('../models/Ingredient');
 const koreanMapper = require('../utils/koreanMapper');
 
-// 점수 정규화를 위한 범위 설정 (실제 데이터에서 확인된 값)
-const SCORE_RANGE = {
-  min: -5.0,  // 실제 데이터에서 나오는 최소값
-  max: 6.0    // 실제 데이터에서 나오는 최대값
-};
-
+// 🔥 수정된 점수 정규화 함수 (0~1 범위 → 0~100 범위)
 /**
  * AI 서버 점수를 0-100 범위로 정규화
- * @param {Number} rawScore - AI 서버에서 받은 원본 점수
+ * @param {Number} rawScore - AI 서버에서 받은 원본 점수 (0~1 범위)
  * @returns {Number} 0-100 범위로 정규화된 점수
  */
 function normalizeScoreTo100(rawScore) {
   if (typeof rawScore !== 'number') return 0;
   
-  // 최소값을 0으로, 최대값을 100으로 선형 변환
-  const normalized = ((rawScore - SCORE_RANGE.min) / (SCORE_RANGE.max - SCORE_RANGE.min)) * 100;
+  // 0~1 범위를 0~100으로 간단히 변환
+  const normalized = rawScore * 100;
   
-  // 0-100 범위로 제한
+  // 0-100 범위로 제한 (안전장치)
   return Math.max(0, Math.min(100, Math.round(normalized)));
+}
+
+// 🔥 호환성을 위한 레거시 정규화 함수 (기존 -5~6 범위용)
+/**
+ * 레거시 모델의 점수를 0-100 범위로 정규화 (sigmoid 적용 전 모델용)
+ * @param {Number} rawScore - AI 서버에서 받은 원본 점수 (-5~6 범위)
+ * @returns {Number} 0-100 범위로 정규화된 점수
+ */
+function legacyNormalizeScoreTo100(rawScore) {
+  if (typeof rawScore !== 'number') return 0;
+  
+  const LEGACY_SCORE_RANGE = {
+    min: -5.0,  // 기존 범위
+    max: 6.0
+  };
+  
+  const normalized = ((rawScore - LEGACY_SCORE_RANGE.min) / (LEGACY_SCORE_RANGE.max - LEGACY_SCORE_RANGE.min)) * 100;
+  return Math.max(0, Math.min(100, Math.round(normalized)));
+}
+
+// 🔥 스마트 정규화 함수 (자동으로 범위 감지)
+/**
+ * 점수 범위를 자동 감지하여 정규화
+ * @param {Number} rawScore - AI 서버에서 받은 원본 점수
+ * @returns {Number} 0-100 범위로 정규화된 점수
+ */
+function smartNormalizeScoreTo100(rawScore) {
+  if (typeof rawScore !== 'number') return 0;
+  
+  // 0~1 범위인 경우 (sigmoid 적용된 모델)
+  if (rawScore >= 0 && rawScore <= 1) {
+    return Math.round(rawScore * 100);
+  }
+  
+  // -5~6 범위인 경우 (기존 모델)
+  if (rawScore >= -6 && rawScore <= 7) {
+    return legacyNormalizeScoreTo100(rawScore);
+  }
+  
+  // 그 외의 경우 - 일반적인 정규화 시도
+  console.warn(`⚠️ Unexpected score range: ${rawScore}. Using fallback normalization.`);
+  return Math.max(0, Math.min(100, Math.round(Math.abs(rawScore) * 10)));
 }
 
 /**
@@ -52,7 +89,7 @@ const findBestPairing = async (koreanLiquor, koreanIngredient) => {
       
       try {
         const rawScore = await getPairingScoreOnly(liquor.nodeId, ingredient.nodeId);
-        const normalizedScore = normalizeScoreTo100(rawScore);
+        const normalizedScore = smartNormalizeScoreTo100(rawScore); // 🔥 스마트 정규화 사용
         
         const combination = {
           liquor,
@@ -134,7 +171,7 @@ const findBestLiquorsForIngredient = async (koreanIngredient, limit = 5) => {
     
     try {
       const rawScore = await getPairingScoreOnly(liquor.nodeId, targetIngredient.nodeId);
-      const normalizedScore = normalizeScoreTo100(rawScore);
+      const normalizedScore = smartNormalizeScoreTo100(rawScore); // 🔥 스마트 정규화 사용
       
       scoredLiquors.push({
         liquor,
@@ -245,7 +282,6 @@ exports.predictPairingScoreKorean = async (req, res) => {
         },
         score: bestWithExplanation.normalizedScore,
         raw_score: bestWithExplanation.rawScore,
-        score_range: SCORE_RANGE,
         explanation: bestWithExplanation.gptExplanation,
         compatibility_level: bestWithExplanation.compatibilityLevel,
         search_summary: {
@@ -273,6 +309,7 @@ exports.predictPairingScoreKorean = async (req, res) => {
   }
 };
 
+// 🔥 점수 범위 감지를 위한 새로운 엔드포인트
 exports.getScoreStatistics = async (req, res) => {
   try {
     const scores = [];
@@ -309,13 +346,24 @@ exports.getScoreStatistics = async (req, res) => {
     const maxScore = Math.max(...scores);
     const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
     
+    // 🔥 점수 범위 감지
+    const is01Range = scores.every(score => score >= 0 && score <= 1);
+    const isLegacyRange = scores.some(score => score < 0 || score > 1);
+    
     return res.json({
       success: true,
       data: {
         sample_scores: scores,
         statistics: { min: minScore, max: maxScore, average: avgScore, count: scores.length },
-        current_range: SCORE_RANGE,
-        recommended_range: { min: Math.floor(minScore - 0.5), max: Math.ceil(maxScore + 0.5) }
+        range_detection: {
+          is_01_range: is01Range,
+          is_legacy_range: isLegacyRange,
+          detected_type: is01Range ? "sigmoid_model" : "legacy_model"
+        },
+        normalization_info: {
+          current_method: "smart_normalization",
+          explanation: "Automatically detects score range and normalizes appropriately"
+        }
       }
     });
     
@@ -371,7 +419,6 @@ exports.findBestPairingKorean = async (req, res) => {
           compatibility_level: bestWithExplanation.compatibilityLevel
         },
         all_tested_combinations: sortedCombinations,
-        score_range: SCORE_RANGE,
         token_usage: {
           gpt_calls_made: 1,
           explanation: "GPT explanation requested only for best combination"
@@ -421,7 +468,7 @@ exports.getRecommendationsKorean = async (req, res) => {
         finalRecommendations = recommendations.recommendations.map(rec => ({
           ingredient_id: rec.ingredient_id,
           ingredient_name: rec.ingredient_name,
-          score: normalizeScoreTo100(rec.score),
+          score: smartNormalizeScoreTo100(rec.score), // 🔥 스마트 정규화 사용
           raw_score: rec.score
         }));
         overallExplanation = recommendations.overall_explanation;
@@ -429,7 +476,7 @@ exports.getRecommendationsKorean = async (req, res) => {
         finalRecommendations = recommendations.map(rec => ({
           ingredient_id: rec.ingredient_id,
           ingredient_name: rec.ingredient_name,
-          score: normalizeScoreTo100(rec.score),
+          score: smartNormalizeScoreTo100(rec.score), // 🔥 스마트 정규화 사용
           raw_score: rec.score
         }));
       }
@@ -613,7 +660,7 @@ exports.getPairingScoreByIds = async (req, res) => {
     const ingredientIdNum = parseInt(ingredientId);
     
     const rawScore = await getPairingScoreOnly(liquorIdNum, ingredientIdNum);
-    const normalizedScore = normalizeScoreTo100(rawScore);
+    const normalizedScore = smartNormalizeScoreTo100(rawScore); // 🔥 스마트 정규화 사용
     
     return res.json({
       success: true,
@@ -643,13 +690,13 @@ exports.getRecommendationsForLiquor = async (req, res) => {
     if (recommendations && typeof recommendations === 'object') {
       if (recommendations.recommendations && Array.isArray(recommendations.recommendations)) {
         result = recommendations.recommendations.map(rec => ({
-          score: normalizeScoreTo100(rec.score),
+          score: smartNormalizeScoreTo100(rec.score), // 🔥 스마트 정규화 사용
           raw_score: rec.score,
           ingredient_id: rec.ingredient_id
         }));
       } else if (Array.isArray(recommendations)) {
         result = recommendations.map(rec => ({
-          score: normalizeScoreTo100(rec.score),
+          score: smartNormalizeScoreTo100(rec.score), // 🔥 스마트 정규화 사용
           raw_score: rec.score,
           ingredient_id: rec.ingredient_id
         }));

@@ -36,56 +36,42 @@ function HomePage() {
   const liquorSliderRef = useRef(null);
   const ingredientSliderRef = useRef(null);
   
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 주류 데이터 가져오기
-        const liquorsResponse = await axios.get('/api/liquors');
-        console.log('Liquors response:', liquorsResponse.data);
-        
-        // 재료 데이터 가져오기
-        const ingredientsResponse = await axios.get('/api/ingredients');
-        console.log('Ingredients response:', ingredientsResponse.data);
-        
-        // 응답 데이터 구조 확인 및 변환
-        const liquorsData = Array.isArray(liquorsResponse.data) 
-          ? liquorsResponse.data 
-          : (liquorsResponse.data.data || []);
-          
-        const ingredientsData = Array.isArray(ingredientsResponse.data) 
-          ? ingredientsResponse.data 
-          : (ingredientsResponse.data.data || []);
-        
-        setLiquors(liquorsData.slice(0, 6)); // 6개만
-        setIngredients(ingredientsData.slice(0, 6)); // 6개만
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setLoading(false);
-        
-        // API 호출 실패 시 샘플 데이터 사용
-        // API 호출 실패 시 샘플 데이터 사용
-setLiquors([
-  { id: 1, name: "와인", type: "와인", imageUrl: "/images/wine.jpg" },
-  { id: 2, name: "진", type: "진", imageUrl: "/images/gin.jpg" },
-  { id: 3, name: "위스키", type: "위스키", imageUrl: "/images/whiskey.jpg" },
-  { id: 4, name: "맥주", type: "맥주", imageUrl: "/images/beer.jpg" },
-  { id: 5, name: "사케", type: "사케", imageUrl: "/images/sake.jpg" },
-  { id: 6, name: "브랜디", type: "브랜디", imageUrl: "/images/brandy.jpg" },
-]);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      // API 호출은 하되, 결과는 무시하고 샘플 데이터 사용
+      await axios.get('/api/liquors');
+      await axios.get('/api/ingredients');
+      
+      console.log('API 호출은 성공했지만 샘플 데이터를 사용합니다.');
+      
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+    
+    // 🔥 항상 샘플 데이터 사용 (이미지 URL 포함)
+    setLiquors([
+      { id: 1, name: "와인", type: "와인", imageUrl: "/images/wine.jpg" },
+      { id: 2, name: "진", type: "진", imageUrl: "/images/gin.jpg" },
+      { id: 3, name: "위스키", type: "위스키", imageUrl: "/images/whiskey.jpg" },
+      { id: 4, name: "맥주", type: "맥주", imageUrl: "/images/beer.jpg" },
+      { id: 5, name: "사케", type: "사케", imageUrl: "/images/sake.jpg" },
+      { id: 6, name: "브랜디", type: "브랜디", imageUrl: "/images/brandy.jpg" },
+    ]);
 
-setIngredients([
-  { id: 1, name: "고기", category: "육류", imageUrl: "/images/meat.jpg" },
-  { id: 2, name: "치즈", category: "유제품", imageUrl: "/images/cheese.jpg" },
-  { id: 3, name: "해산물", category: "해산물", imageUrl: "/images/seafood.jpg" },
-  { id: 4, name: "초콜릿", category: "디저트", imageUrl: "/images/chocolate.jpg" },
-  { id: 5, name: "바질", category: "허브", imageUrl: "/images/basil.jpg" },
-]);
-      }
-    };
+    setIngredients([
+      { id: 1, name: "고기", category: "육류", imageUrl: "/images/meat.jpg" },
+      { id: 2, name: "치즈", category: "유제품", imageUrl: "/images/cheese.jpg" },
+      { id: 3, name: "해산물", category: "해산물", imageUrl: "/images/seafood.jpg" },
+      { id: 4, name: "초콜릿", category: "디저트", imageUrl: "/images/chocolate.jpg" },
+      { id: 5, name: "바질", category: "허브", imageUrl: "/images/basil.jpg" },
+    ]);
+    
+    setLoading(false);
+  };
 
-    fetchData();
-  }, []);
+  fetchData();
+}, []);
 
   // 페어링 페이지로 이동
   const handlePairingExplore = () => {

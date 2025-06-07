@@ -1,21 +1,20 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import MessagePassing
-import pickle
+from torch_geometric.nn import MessagePassing, GATConv
 
 """
-all_node_emb = GNN(edge_index)
-liquor_emb = all_node_emb[liquor_ids]
-ingredient_emb = all_node_emb[ingredient_ids]
-score = MLP(concat(liquor_emb, ingredient_emb))
-loss = BCE(score, label)
-loss.backward()
+    all_node_emb = GNN(edge_index)
+    liquor_emb = all_node_emb[liquor_ids]
+    ingredient_emb = all_node_emb[ingredient_ids]
+    score = MLP(concat(liquor_emb, ingredient_emb))
+    loss = BCE(score, label)
+    loss.backward()
 """
 
 class NeuralCF(nn.Module):
     def __init__(self, num_users, num_items, num_nodes=8298, num_relations=2, emb_size=128,
-                 hidden_layers=[128, 64, 32], emb_init_path=None,
+                 hidden_layers=[128, 64, 32],
                  edge_index=None, edge_type=None, edge_weight=None):
         super(NeuralCF, self).__init__()
         self.num_nodes = num_nodes
@@ -26,13 +25,6 @@ class NeuralCF(nn.Module):
         self.edge_weight = edge_weight
 
         self.embedding = nn.Embedding(num_nodes, emb_size)
-
-        if emb_init_path is not None:
-            with open(emb_init_path, "rb") as f:
-                emb_init = pickle.load(f)
-            with torch.no_grad():
-                for idx, (node_idx, init_vector) in enumerate(emb_init.items()):
-                    self.embedding.weight[idx] = torch.tensor(init_vector, dtype=torch.float32)
 
         self.norm1 = nn.LayerNorm(emb_size)
 
@@ -50,10 +42,15 @@ class NeuralCF(nn.Module):
         self.output_layer = nn.Linear(hidden_layers[-1] + emb_size, 1)
 
     def forward(self, user_indices, item_indices, is_embbed=False):
-        # 내부에 저장된 그래프 정보 사용
+        device = user_indices.device
+
         edge_index = self.edge_index
         edge_type = self.edge_type
         edge_weight = self.edge_weight
+
+        edge_index = self.edge_index.to(device)
+        edge_type = self.edge_type.to(device)
+        edge_weight = self.edge_weight.to(device) if self.edge_weight is not None else None
 
         x = self.embedding(torch.arange(self.num_nodes, device=edge_index.device))
         x = self.wrgcn(x, edge_index, edge_type, edge_weight)
@@ -78,9 +75,12 @@ class NeuralCF(nn.Module):
         mlp_output = self.mlp(mlp_input)
 
         final_input = torch.cat([gmf_output, mlp_output], dim=-1)
-        score = self.output_layer(final_input).squeeze()
+        # 🔥 핵심 수정: sigmoid 함수 추가하여 0~1 범위로 변환
+        score = torch.sigmoid(self.output_layer(final_input)).squeeze()
 
         return score
+
+
 
 class WeightedRGCNConv(MessagePassing):
     def __init__(self, in_channels, out_channels, num_relations, aggr='add', bias=True):
