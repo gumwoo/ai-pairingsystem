@@ -1,494 +1,570 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import koreanPairingService from '../services/koreanPairingService';
 import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Grid,
-  TextField,
-  Button,
-  Autocomplete,
-  CircularProgress,
-  Card,
-  CardContent,
-  CardMedia,
-  Rating,
-  Divider,
-  Chip,
-  Alert
+  Box, Container, Typography, Button, Grid, Card, TextField, Paper,
+  Chip, CircularProgress, Fade, useTheme, useMediaQuery,
+  alpha, Rating, Tab, Tabs, Alert,
 } from '@mui/material';
-import LocalBarIcon from '@mui/icons-material/LocalBar';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
-import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
+import {
+  Search as SearchIcon, WineBar as WineBarIcon, Restaurant as RestaurantIcon,
+  LocalBar as LocalBarIcon, Liquor as LiquorIcon, Shuffle as ShuffleIcon,
+  Star as StarIcon,
+} from '@mui/icons-material';
 
-// Import API services
-import { searchLiquors, searchIngredients, getPairingScore } from '../services/api';
+function TabPanel({ children, value, index }) {
+  return (
+    <div role="tabpanel" hidden={value !== index}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
+// 영어 재료명을 한글로 번역하는 함수
+const translateIngredientName = (englishName) => {
+  if (!englishName || typeof englishName !== 'string') {
+    return '알 수 없음';
+  }
+
+  const translations = {
+    'wine': '와인', 'white_pepper': '화이트 페퍼', 'pork_shoulder': '돼지 어깨살',
+    'mussel': '홍합', 'golden_brown_sugar': '황설탕', 'spanish_onion': '스페인 양파',
+    'dark_soy_sauce': '진간장', 'lard': '라드', 'pork_tenderloin': '돼지 안심',
+    'lemon': '레몬', 'salt_&_freshly_ground_black_pepper': '소금과 후추',
+    'rotisserie_cooked_chicken': '로티세리 치킨', 'grain_cereal': '곡물 시리얼',
+    'verjus': '베르쥬', 'coconut_meat': '코코넛', 'unsalted_chicken_stock': '무염 치킨 스톡',
+    'lemon_balm_leaf': '레몬밤', 'lemon_peel_strip': '레몬 껍질', 'granulated_yeast': '효모',
+    'turkey_breast_half': '칠면조 가슴살', 'stone_ground_whole_wheat_flour': '통밀가루',
+    'scotch': '스카치 위스키', 'bourbon': '버번 위스키', 'rye_whiskey': '라이 위스키',
+    'irish_whiskey': '아이리시 위스키', 'scotch_whisky': '스카치 위스키',
+    'bourbon_whiskey': '버번 위스키', 'jack_daniels_whiskey': '잭 다니엘 위스키',
+    'cheese': '치즈', 'chicken': '닭고기', 'beef': '소고기', 'chocolate': '초콜릿',
+    'coffee': '커피', 'apple': '사과', 'banana': '바나나', 'tomato': '토마토',
+    'onion': '양파', 'garlic': '마늘', 'basil': '바질', 'olive_oil': '올리브 오일',
+    'salt': '소금', 'pepper': '후추', 'butter': '버터', 'cream': '크림',
+    'milk': '우유', 'egg': '계란', 'bread': '빵', 'rice': '쌀'
+  };
+
+  return translations[englishName] || englishName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+// 술 이름을 한글로 번역하는 함수
+const translateLiquorName = (englishName) => {
+  if (!englishName || typeof englishName !== 'string') {
+    return '알 수 없음';
+  }
+
+  const translations = {
+    'wine': '와인', 'red_wine': '레드 와인', 'white_wine': '화이트 와인',
+    'whiskey': '위스키', 'whisky': '위스키', 'scotch': '스카치 위스키',
+    'bourbon': '버번 위스키', 'rye_whiskey': '라이 위스키',
+    'irish_whiskey': '아이리시 위스키', 'scotch_whisky': '스카치 위스키',
+    'bourbon_whiskey': '버번 위스키', 'jack_daniels_whiskey': '잭 다니엘 위스키',
+    'vodka': '보드카', 'gin': '진', 'rum': '럼', 'tequila': '데킬라',
+    'beer': '맥주', 'ale': '에일', 'lager': '라거', 'stout': '스타우트',
+    'sake': '사케', 'soju': '소주', 'makgeolli': '막걸리',
+    'cognac': '코냑', 'brandy': '브랜디', 'armagnac': '아르마냑',
+    'vermouth': '베르무트', 'champagne': '샴페인', 'prosecco': '프로세코',
+    'port': '포트 와인', 'sherry': '셰리', 'madeira': '마데이라'
+  };
+
+  return translations[englishName] || englishName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
 
 function PairingPage() {
-  // State for selected items
-  const [selectedLiquor, setSelectedLiquor] = useState(null);
-  const [selectedIngredient, setSelectedIngredient] = useState(null);
-  
-  // State for search options
-  const [liquorOptions, setLiquorOptions] = useState([]);
-  const [ingredientOptions, setIngredientOptions] = useState([]);
-  
-  // Loading states
-  const [isLiquorLoading, setIsLiquorLoading] = useState(false);
-  const [isIngredientLoading, setIsIngredientLoading] = useState(false);
-  const [isPairingLoading, setIsPairingLoading] = useState(false);
-  
-  // Result states
-  const [pairingResult, setPairingResult] = useState(null);
+  const theme = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const queryParams = new URLSearchParams(location.search);
+  const modeParam = queryParams.get('mode');
+
+  // URL 파라미터에 따라 초기 탭 설정
+  const getInitialTab = () => {
+    if (modeParam === 'ingredient-recommendation') return 1;
+    if (modeParam === 'liquor-recommendation') return 2;
+    return 0;
+  };
+
+  const [tabValue, setTabValue] = useState(getInitialTab());
+  const [koreanLiquor, setKoreanLiquor] = useState('');
+  const [koreanIngredient, setKoreanIngredient] = useState('');
+  const [pairingResults, setPairingResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
-  
-  // Search inputs
-  const [liquorInput, setLiquorInput] = useState('');
-  const [ingredientInput, setIngredientInput] = useState('');
+  const [activeView, setActiveView] = useState('search');
 
-  // Handle liquor search
   useEffect(() => {
-    if (liquorInput === '') {
-      setLiquorOptions([]);
-      return;
-    }
-    
-    setIsLiquorLoading(true);
-    
-    const fetchLiquors = async () => {
-      try {
-        const results = await searchLiquors(liquorInput);
-        setLiquorOptions(results.data || []);
-      } catch (error) {
-        console.error('Error fetching liquors:', error);
-        // Use mock data when API fails
-        const mockResults = [
-          { liquor_id: 1, name: 'Bourbon Whiskey' },
-          { liquor_id: 2, name: 'Vodka' },
-          { liquor_id: 3, name: 'Gin' },
-          { liquor_id: 4, name: 'Rum' },
-          { liquor_id: 5, name: 'Tequila' }
-        ].filter(liquor => 
-          liquor.name.toLowerCase().includes(liquorInput.toLowerCase())
-        );
-        
-        setLiquorOptions(mockResults);
-      } finally {
-        setIsLiquorLoading(false);
-      }
-    };
-    
-    const timer = setTimeout(() => {
-      fetchLiquors();
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [liquorInput]);
+    // URL 파라미터가 변경될 때 탭 업데이트
+    setTabValue(getInitialTab());
+  }, [location.search]);
 
-  // Handle ingredient search
-  useEffect(() => {
-    if (ingredientInput === '') {
-      setIngredientOptions([]);
-      return;
-    }
-    
-    setIsIngredientLoading(true);
-    
-    const fetchIngredients = async () => {
+  const handleKoreanSearch = async () => {
+    if (tabValue === 0) {
+      // 페어링 분석
+      if (!koreanLiquor || !koreanIngredient) {
+        setError('주류와 재료를 모두 입력해주세요.');
+        return;
+      }
+      
       try {
-        const results = await searchIngredients(ingredientInput);
-        setIngredientOptions(results.data || []);
-      } catch (error) {
-        console.error('Error fetching ingredients:', error);
-        // Use mock data when API fails
-        const mockResults = [
-          { ingredient_id: 1, name: 'Apple' },
-          { ingredient_id: 2, name: 'Lemon' },
-          { ingredient_id: 3, name: 'Chocolate' },
-          { ingredient_id: 4, name: 'Vanilla' },
-          { ingredient_id: 5, name: 'Cinnamon' }
-        ].filter(ingredient => 
-          ingredient.name.toLowerCase().includes(ingredientInput.toLowerCase())
-        );
-        
-        setIngredientOptions(mockResults);
-      } finally {
-        setIsIngredientLoading(false);
+        setSearching(true);
+        setError(null);
+        const response = await koreanPairingService.predictPairing(koreanLiquor, koreanIngredient);
+        console.log('Pairing prediction response:', response.data);
+        setPairingResults(response.data);
+        setActiveView('results');
+        setSearching(false);
+      } catch (err) {
+        setError(err.message || '페어링 분석 중 오류가 발생했습니다.');
+        setSearching(false);
       }
-    };
-    
-    const timer = setTimeout(() => {
-      fetchIngredients();
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [ingredientInput]);
-
-  // Handle get pairing
-  const handleGetPairing = async () => {
-    if (!selectedLiquor || !selectedIngredient) {
-      setError('Please select both a liquor and an ingredient.');
-      return;
-    }
-    
-    setIsPairingLoading(true);
-    setPairingResult(null);
-    setError(null);
-    
-    try {
-      // Call the actual API
-      const result = await getPairingScore(selectedLiquor.liquor_id, selectedIngredient.ingredient_id);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to get pairing information');
+    } else if (tabValue === 1) {
+      // 재료 추천
+      if (!koreanLiquor) {
+        setError('주류를 입력해주세요.');
+        return;
       }
       
-      // Format the data from the API response
-      const formattedResult = {
-        score: result.data.score,
-        liquor: selectedLiquor,
-        ingredient: selectedIngredient,
-        reason: result.data.reason,
-        shared_compounds: result.data.shared_compounds || [],
-        compatibility_level: result.data.compatibility_level || 'good',
-        flavor_notes: {
-          liquor: selectedLiquor.flavor_profile || ['No flavor profile available'],
-          ingredient: selectedIngredient.flavor_profile || ['No flavor profile available']
-        }
-      };
+      try {
+        setSearching(true);
+        setError(null);
+        const response = await koreanPairingService.getRecommendations(koreanLiquor, 3);
+        console.log('Ingredient recommendations response:', response.data);
+        setPairingResults(response.data);
+        setActiveView('results');
+        setSearching(false);
+      } catch (err) {
+        setError(err.message || '재료 추천 중 오류가 발생했습니다.');
+        setSearching(false);
+      }
+    } else if (tabValue === 2) {
+      // 술 추천
+      if (!koreanIngredient) {
+        setError('재료를 입력해주세요.');
+        return;
+      }
       
-      setPairingResult(formattedResult);
-    } catch (error) {
-      console.error('Error getting pairing:', error);
-      setError('Failed to get pairing information. Please try again.');
-      
-      // Use mock data for demo purposes when API fails
-      const mockResult = {
-        score: 0.85,
-        liquor: selectedLiquor,
-        ingredient: selectedIngredient,
-        reason: "These pair well together because the caramel and vanilla notes in the bourbon complement the natural sweetness of the apple, while the spirit's oaky character provides a pleasant contrast to the fruit's crisp texture.",
-        shared_compounds: ['Vanillin', 'Ethyl acetate', 'Methyl anthranilate'],
-        compatibility_level: 'excellent',
-        flavor_notes: {
-          liquor: selectedLiquor.flavor_profile || ['Caramel', 'Vanilla', 'Oak', 'Spice'],
-          ingredient: selectedIngredient.flavor_profile || ['Sweet', 'Tart', 'Crisp']
-        }
-      };
-      
-      setPairingResult(mockResult);
-    } finally {
-      setIsPairingLoading(false);
+      try {
+        setSearching(true);
+        setError(null);
+        const response = await koreanPairingService.getLiquorRecommendations(koreanIngredient, 3);
+        console.log('Liquor recommendations response:', response.data);
+        setPairingResults(response.data);
+        setActiveView('results');
+        setSearching(false);
+      } catch (err) {
+        setError(err.message || '술 추천 중 오류가 발생했습니다.');
+        setSearching(false);
+      }
     }
   };
 
-  // Reset the form
-  const handleReset = () => {
-    setSelectedLiquor(null);
-    setSelectedIngredient(null);
-    setLiquorInput('');
-    setIngredientInput('');
-    setPairingResult(null);
+  const handleClearSearch = () => {
+    setKoreanLiquor('');
+    setKoreanIngredient('');
+    setPairingResults(null);
     setError(null);
+    setActiveView('search');
+    navigate('/pairing');
   };
 
-  // Get color based on compatibility level
-  const getCompatibilityColor = (level) => {
-    switch (level) {
-      case 'excellent':
-        return '#2e7d32'; // Green
-      case 'good':
-        return '#1976d2'; // Blue
-      case 'moderate':
-        return '#ed6c02'; // Orange
-      case 'challenging':
-        return '#d32f2f'; // Red
-      default:
-        return '#1976d2'; // Default blue
+  const getScoreOutOf100 = (score) => {
+    if (!score || isNaN(score)) return 0;
+    let normalizedScore = score;
+    if (score > 10) {
+      normalizedScore = (score / 10) * 10;
+    } else if (score <= 1) {
+      normalizedScore = score * 100;
+    } else if (score <= 10) {
+      normalizedScore = (score / 10) * 100;
     }
+    return Math.round(Math.min(normalizedScore, 100));
+  };
+
+  // 개선된 별점 시스템: 점수 구간별 별점 매핑
+  const getStarRating = (score) => {
+    const normalizedScore = getScoreOutOf100(score);
+    
+    if (normalizedScore >= 81) return 5;  // 81-100점: 별 5개
+    if (normalizedScore >= 61) return 4;  // 61-80점: 별 4개
+    if (normalizedScore >= 41) return 3;  // 41-60점: 별 3개
+    if (normalizedScore >= 21) return 2;  // 21-40점: 별 2개
+    if (normalizedScore >= 1) return 1;   // 1-20점: 별 1개
+    return 0;  // 0점: 별 0개
+  };
+
+  // 점수에 따른 평가 문구
+  const getScoreDescription = (score) => {
+    const normalizedScore = getScoreOutOf100(score);
+    
+    if (normalizedScore >= 81) return '매우 훌륭함';
+    if (normalizedScore >= 61) return '좋음';
+    if (normalizedScore >= 41) return '보통';
+    if (normalizedScore >= 21) return '아쉬움';
+    if (normalizedScore >= 1) return '별로';
+    return '매우 아쉬움';
+  };
+
+  const getIngredientName = (rec) => {
+    const name = rec?.ingredient_name || rec?.ingredient || rec?.name;
+    return name || '알 수 없음';
+  };
+
+  const getLiquorName = (rec) => {
+    const name = rec?.liquor_name || rec?.liquor || rec?.name;
+    return name || '알 수 없음';
   };
 
   return (
-    <Container maxWidth="lg">
-      <Typography variant="h3" align="center" gutterBottom sx={{ mt: 4 }}>
-        완벽한 페어링 찾기
-      </Typography>
-      <Typography variant="subtitle1" align="center" paragraph sx={{ mb: 4 }}>
-        AI 기반 추천 시스템으로 최고의 음식과 음료 조합을 발견해보세요.
-      </Typography>
+    <Box>
+  <Container maxWidth="lg" sx={{ my: 4 }}> {/* 컨테이너 추가 */}
+    <Box sx={{ 
+      py: 10, 
+      background: `
+        linear-gradient(135deg, 
+          rgba(30, 30, 30, 0.75) 0%, 
+          rgba(45, 35, 30, 0.8) 50%, 
+          rgba(60, 45, 35, 0.75) 100%
+        ),
+        url('/images/wine-bg.jpg')
+      `,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      color: 'white',
+      position: 'relative',
+      borderRadius: 3,  // 둥근 모서리 추가
+      overflow: 'hidden', // 배경이 모서리를 넘지 않도록
+    }}>
+      <Container maxWidth="lg">
+        <Box textAlign="center" position="relative" zIndex={1}>
+          <Typography 
+            variant="h1" 
+            component="h1" 
+            sx={{ 
+              mb: 3, 
+              fontWeight: 600, 
+              fontSize: { xs: '2rem', md: '2.5rem' },
+              color: 'white',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '-0.01em',
+            }}
+          >
+            완벽한 페어링 찾기
+          </Typography>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              mb: 5, 
+              maxWidth: 700, 
+              mx: 'auto', 
+              lineHeight: 1.7,
+              color: 'rgba(255, 255, 255, 0.9)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: { xs: '1rem', md: '1.2rem' },
+            }}
+          >
+            좋아하는 주류나 음식을 입력하면 AI가 최적의 페어링을 추천해 드립니다.
+          </Typography>
+        </Box>
+      </Container>
+    </Box>
+  </Container>
 
-      {/* Search Form */}
-      <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Autocomplete
-              value={selectedLiquor}
-              onChange={(event, newValue) => {
-                setSelectedLiquor(newValue);
-              }}
-              inputValue={liquorInput}
-              onInputChange={(event, newInputValue) => {
-                setLiquorInput(newInputValue);
-              }}
-              options={liquorOptions}
-              getOptionLabel={(option) => option.name}
-              loading={isLiquorLoading}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="주류 선택"
-                  fullWidth
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <>
-                        <LocalBarIcon color="primary" sx={{ mr: 1 }} />
-                        {params.InputProps.startAdornment}
-                      </>
-                    ),
-                    endAdornment: (
-                      <>
-                        {isLiquorLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
-          </Grid>
+      <Container maxWidth="lg" sx={{ my: 8 }}>
+        <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 2 }}>
+          <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tab label="페어링 분석" icon={<WineBarIcon />} iconPosition="start" sx={{ minHeight: 64, fontSize: '1.1rem' }} />
+            <Tab label="재료 추천" icon={<RestaurantIcon />} iconPosition="start" sx={{ minHeight: 64, fontSize: '1.1rem' }} />
+            <Tab label="술 추천" icon={<LocalBarIcon />} iconPosition="start" sx={{ minHeight: 64, fontSize: '1.1rem' }} />
+          </Tabs>
 
-          <Grid item xs={12} md={5}>
-            <Autocomplete
-              value={selectedIngredient}
-              onChange={(event, newValue) => {
-                setSelectedIngredient(newValue);
-              }}
-              inputValue={ingredientInput}
-              onInputChange={(event, newInputValue) => {
-                setIngredientInput(newInputValue);
-              }}
-              options={ingredientOptions}
-              getOptionLabel={(option) => option.name}
-              loading={isIngredientLoading}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="재료 선택"
-                  fullWidth
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <>
-                        <RestaurantIcon color="primary" sx={{ mr: 1 }} />
-                        {params.InputProps.startAdornment}
-                      </>
-                    ),
-                    endAdornment: (
-                      <>
-                        {isIngredientLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center' }}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              fullWidth 
-              onClick={handleGetPairing}
-              disabled={!selectedLiquor || !selectedIngredient || isPairingLoading}
-              sx={{ height: '56px' }}
-            >
-              {isPairingLoading ? <CircularProgress size={24} color="inherit" /> : '페어링 찾기'}
-            </Button>
-          </Grid>
-        </Grid>
-
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
-      </Paper>
-
-      {/* Results Section */}
-      {pairingResult && (
-        <Card elevation={3} sx={{ mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h4" component="div">
-                페어링 결과
+          <TabPanel value={tabValue} index={0}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                주류와 재료의 페어링 점수를 분석합니다
               </Typography>
-              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h5" component="span" sx={{ mr: 1 }}>
-                  점수:
-                </Typography>
-                <Rating 
-                  value={pairingResult.score * 5} 
-                  precision={0.5} 
-                  readOnly 
-                  sx={{ color: 'secondary.main' }}
-                />
-                <Typography variant="body1" sx={{ ml: 1 }}>
-                  ({(pairingResult.score * 100).toFixed(0)}%)
-                </Typography>
-              </Box>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                두 가지를 모두 입력하시면 AI가 얼마나 잘 어울리는지 분석해드립니다.
+              </Typography>
             </Box>
             
-            {/* Compatibility badge */}
-            <Box sx={{ mb: 3 }}>
-              <Chip 
-                label={`${pairingResult.compatibility_level?.charAt(0).toUpperCase()}${pairingResult.compatibility_level?.slice(1)} 호환성`} 
-                sx={{ 
-                  backgroundColor: getCompatibilityColor(pairingResult.compatibility_level),
-                  color: 'white',
-                  fontWeight: 'bold'
-                }}
-              />
-            </Box>
-
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <LocalBarIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="h5" component="div">
-                        {pairingResult.liquor.name}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      플레이버 프로파일:
-                    </Typography>
-                    <Box sx={{ mb: 2 }}>
-                      {pairingResult.flavor_notes.liquor.map((note, index) => (
-                        <Chip 
-                          key={index}
-                          label={note}
-                          size="small"
-                          sx={{ mr: 1, mb: 1 }}
-                        />
-                      ))}
-                    </Box>
-                  </CardContent>
-                </Card>
+              <Grid item xs={12} md={5}>
+                <TextField
+                  fullWidth label="주류" placeholder="예: 위스키, 와인, 맥주, 소주"
+                  value={koreanLiquor} onChange={(e) => setKoreanLiquor(e.target.value)} disabled={searching}
+                  InputProps={{ startAdornment: <WineBarIcon sx={{ mr: 1, color: 'primary.main' }} /> }}
+                  sx={{ '& .MuiInputBase-root': { height: 64 } }}
+                />
               </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <RestaurantIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="h5" component="div">
-                        {pairingResult.ingredient.name}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      플레이버 프로파일:
-                    </Typography>
-                    <Box sx={{ mb: 2 }}>
-                      {pairingResult.flavor_notes.ingredient.map((note, index) => (
-                        <Chip 
-                          key={index}
-                          label={note}
-                          size="small"
-                          sx={{ mr: 1, mb: 1 }}
-                        />
-                      ))}
-                    </Box>
-                  </CardContent>
-                </Card>
+              <Grid item xs={12} md={5}>
+                <TextField
+                  fullWidth label="재료" placeholder="예: 치즈, 초콜릿, 고기, 해산물"
+                  value={koreanIngredient} onChange={(e) => setKoreanIngredient(e.target.value)} disabled={searching}
+                  InputProps={{ startAdornment: <RestaurantIcon sx={{ mr: 1, color: 'primary.main' }} /> }}
+                  sx={{ '& .MuiInputBase-root': { height: 64 } }}
+                />
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <Button
+                  variant="contained" fullWidth size="large" sx={{ height: 64 }}
+                  onClick={handleKoreanSearch} disabled={searching || !koreanLiquor || !koreanIngredient}
+                  startIcon={searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                >
+                  {searching ? '분석 중...' : '분석하기'}
+                </Button>
               </Grid>
             </Grid>
+          </TabPanel>
 
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                <TipsAndUpdatesIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                이 페어링이 잘 어울리는 이유:
+          <TabPanel value={tabValue} index={1}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                주류에 어울리는 재료를 추천합니다
               </Typography>
-              <Typography paragraph>
-                {pairingResult.reason}
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                좋아하는 주류를 입력하시면 AI가 가장 잘 어울리는 재료 3가지를 추천해드립니다.
               </Typography>
             </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <TextField
+                  fullWidth label="주류" placeholder="예: 위스키, 와인, 맥주, 소주, 진, 럼"
+                  value={koreanLiquor} onChange={(e) => setKoreanLiquor(e.target.value)} disabled={searching}
+                  InputProps={{ startAdornment: <WineBarIcon sx={{ mr: 1, color: 'primary.main' }} /> }}
+                  sx={{ '& .MuiInputBase-root': { height: 64 } }}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Button
+                  variant="contained" fullWidth size="large" sx={{ height: 64 }}
+                  onClick={handleKoreanSearch} disabled={searching || !koreanLiquor}
+                  startIcon={searching ? <CircularProgress size={20} /> : <StarIcon />}
+                >
+                  {searching ? '추천 중...' : '추천받기'}
+                </Button>
+              </Grid>
+            </Grid>
+          </TabPanel>
 
-            {pairingResult.shared_compounds && pairingResult.shared_compounds.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  공통 플레이버 화합물:
+          <TabPanel value={tabValue} index={2}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                재료에 어울리는 술을 추천합니다
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                좋아하는 음식이나 재료를 입력하시면 AI가 가장 잘 어울리는 술 3가지를 추천해드립니다.
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <TextField
+                  fullWidth label="재료" placeholder="예: 치즈, 초콜릿, 스테이크, 해산물, 디저트"
+                  value={koreanIngredient} onChange={(e) => setKoreanIngredient(e.target.value)} disabled={searching}
+                  InputProps={{ startAdornment: <RestaurantIcon sx={{ mr: 1, color: 'primary.main' }} /> }}
+                  sx={{ '& .MuiInputBase-root': { height: 64 } }}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Button
+                  variant="contained" fullWidth size="large" sx={{ height: 64 }}
+                  onClick={handleKoreanSearch} disabled={searching || !koreanIngredient}
+                  startIcon={searching ? <CircularProgress size={20} /> : <LocalBarIcon />}
+                >
+                  {searching ? '추천 중...' : '추천받기'}
+                </Button>
+              </Grid>
+            </Grid>
+          </TabPanel>
+
+          {error && <Alert severity="error" sx={{ mt: 3 }}>{error}</Alert>}
+        </Paper>
+
+        {activeView === 'results' && pairingResults && (
+          <Fade in={true}>
+            <Box mt={4}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h3" sx={{ fontWeight: 600 }}>
+                  {tabValue === 0 ? '페어링 분석 결과' : tabValue === 1 ? '재료 추천 결과' : '술 추천 결과'}
                 </Typography>
-                <Box>
-                  {pairingResult.shared_compounds.map((compound, index) => (
-                    <Chip 
-                      key={index}
-                      label={compound}
-                      color="secondary"
-                      variant="outlined"
-                      size="small"
-                      sx={{ mr: 1, mb: 1 }}
-                    />
-                  ))}
-                </Box>
+                <Button variant="outlined" onClick={handleClearSearch} size="large">새 검색</Button>
               </Box>
-            )}
 
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-              <Button variant="outlined" onClick={handleReset}>
-                다른 페어링 시도하기
-              </Button>
+              <Paper elevation={2} sx={{ p: 4, borderRadius: 2 }}>
+                {tabValue === 0 ? (
+                  <Grid container spacing={4}>
+                    <Grid item xs={12} md={8}>
+                      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+                        {pairingResults.korean_input?.liquor || koreanLiquor} + {pairingResults.korean_input?.ingredient || koreanIngredient}
+                      </Typography>
+                      {pairingResults.english_names && (
+                        <Typography variant="body1" color="text.secondary" gutterBottom>
+                          영어명: {pairingResults.english_names.liquor} + {pairingResults.english_names.ingredient}
+                        </Typography>
+                      )}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Rating value={getStarRating(pairingResults.score)} readOnly sx={{ mr: 2 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {getScoreOutOf100(pairingResults.score)}점 / 100점
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                        {pairingResults.gpt_explanation || pairingResults.explanation || '이 조합에 대한 설명이 없습니다.'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Box sx={{ p: 3, backgroundColor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2, textAlign: 'center' }}>
+                        <Typography variant="h6" gutterBottom>페어링 점수</Typography>
+                        <Typography variant="h2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          {getScoreOutOf100(pairingResults.score)}점
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          {getScoreDescription(pairingResults.score)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                ) : tabValue === 1 ? (
+                  <Box>
+                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+                      {translateIngredientName(pairingResults.liquor_name) || koreanLiquor} 추천 재료 TOP 3
+                    </Typography>
+                    
+                    {pairingResults.overall_explanation && (
+                      <Paper sx={{ p: 3, mb: 4, backgroundColor: alpha(theme.palette.info.main, 0.05) }}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>💡 전체 추천 설명</Typography>
+                        <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                          {pairingResults.overall_explanation}
+                        </Typography>
+                      </Paper>
+                    )}
+
+                    <Grid container spacing={3}>
+                      {pairingResults.recommendations?.map((rec, index) => {
+                        const ingredientName = getIngredientName(rec);
+                        return (
+                          <Grid item xs={12} md={4} key={index}>
+                            <Card sx={{ 
+                              p: 3, height: '100%',
+                              transition: 'transform 0.2s, elevation 0.2s',
+                              '&:hover': { transform: 'translateY(-4px)', elevation: 8 }
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', mr: 1, minWidth: 32 }}>
+                                  #{index + 1}
+                                </Typography>
+                                <RestaurantIcon sx={{ mr: 1, color: 'primary.main' }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {translateIngredientName(ingredientName)}
+                                </Typography>
+                              </Box>
+                              
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                영어명: {ingredientName}
+                              </Typography>
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                <Rating value={getStarRating(rec.score)} readOnly size="small" sx={{ mr: 1 }} />
+                                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                  {getScoreOutOf100(rec.score)}점
+                                </Typography>
+                              </Box>
+
+                              {rec.explanation && (
+                                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                                  {rec.explanation}
+                                </Typography>
+                              )}
+                            </Card>
+                          </Grid>
+                        );
+                      })}
+                    </Grid>
+
+                    {(!pairingResults.recommendations || pairingResults.recommendations.length === 0) && (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="h6" color="text.secondary">추천 결과가 없습니다.</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+                      {translateIngredientName(pairingResults.ingredient_name) || koreanIngredient} 추천 술 TOP 3
+                    </Typography>
+                    
+                    {pairingResults.overall_explanation && (
+                      <Paper sx={{ p: 3, mb: 4, backgroundColor: alpha(theme.palette.info.main, 0.05) }}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>💡 전체 추천 설명</Typography>
+                        <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                          {pairingResults.overall_explanation}
+                        </Typography>
+                      </Paper>
+                    )}
+
+                    <Grid container spacing={3}>
+                      {pairingResults.recommendations?.map((rec, index) => {
+                        const liquorName = getLiquorName(rec);
+                        return (
+                          <Grid item xs={12} md={4} key={index}>
+                            <Card sx={{ 
+                              p: 3, height: '100%',
+                              transition: 'transform 0.2s, elevation 0.2s',
+                              '&:hover': { transform: 'translateY(-4px)', elevation: 8 }
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', mr: 1, minWidth: 32 }}>
+                                  #{index + 1}
+                                </Typography>
+                                <LocalBarIcon sx={{ mr: 1, color: 'primary.main' }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {translateLiquorName(liquorName)}
+                                </Typography>
+                              </Box>
+                              
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                영어명: {liquorName}
+                              </Typography>
+                              
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                <Rating value={getStarRating(rec.score)} readOnly size="small" sx={{ mr: 1 }} />
+                                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                  {getScoreOutOf100(rec.score)}점
+                                </Typography>
+                              </Box>
+
+                              {rec.explanation && (
+                                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                                  {rec.explanation}
+                                </Typography>
+                              )}
+                            </Card>
+                          </Grid>
+                        );
+                      })}
+                    </Grid>
+
+                    {(!pairingResults.recommendations || pairingResults.recommendations.length === 0) && (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="h6" color="text.secondary">추천 결과가 없습니다.</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Paper>
             </Box>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* How It Works Section */}
-      <Typography variant="h4" align="center" gutterBottom sx={{ mt: 6, mb: 3 }}>
-        작동 방법
-      </Typography>
-      
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box component="span" sx={{ mr: 1, fontWeight: 'bold', color: 'primary.main' }}>1.</Box>
-              항목 선택
-            </Typography>
-            <Typography>
-              종합적인 데이터베이스에서 주류와 재료를 선택하세요. 이름으로 검색하여 원하는 항목을 빠르게 찾을 수 있습니다.
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box component="span" sx={{ mr: 1, fontWeight: 'bold', color: 'primary.main' }}>2.</Box>
-              AI 분석
-            </Typography>
-            <Typography>
-              우리의 AI 모델은 화학 화합물, 플레이버 프로파일, 그리고 전통적인 페어링을 분석하여 호환성을 결정하고 점수를 생성합니다.
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box component="span" sx={{ mr: 1, fontWeight: 'bold', color: 'primary.main' }}>3.</Box>
-              설명된 결과
-            </Typography>
-            <Typography>
-              페어링 점수를 확인하고 공통 플레이버 화합물과 상호 보완적인 노트를 포함하여 왜 이 조합이 잘 작동하는지에 대한 상세한 설명을 읽어보세요.
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+          </Fade>
+        )}
+      </Container>
+    </Box>
   );
 }
 

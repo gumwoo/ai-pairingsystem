@@ -30,8 +30,11 @@ const setupSwagger = require('./config/swagger');
 const app = express();
 const PORT = process.env.PORT || 5004;
 
-// Middleware
-app.use(cors());
+// CORS 설정 업데이트
+app.use(cors({
+  origin: 'http://localhost:3004', // 프론트엔드 주소
+  credentials: true
+}));
 app.use(helmet());
 app.use(compression());
 app.use(bodyParser.json());

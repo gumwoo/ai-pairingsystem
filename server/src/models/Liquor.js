@@ -32,6 +32,26 @@ class Liquor {
     }
   }
 
+  static async getByNodeId(nodeId) {
+    try {
+      console.log(`Liquor.getByNodeId: Looking for node_id = ${nodeId}`);
+      const [rows] = await pool.query(`
+        SELECT l.*, n.is_hub, n.created_at as node_created_at, n.updated_at as node_updated_at
+        FROM liquors l
+        JOIN nodes n ON l.node_id = n.id
+        WHERE n.node_id = ?
+      `, [nodeId]);
+      console.log(`Liquor.getByNodeId: Found ${rows.length} rows`);
+      if (rows.length > 0) {
+        console.log(`Liquor.getByNodeId: First row:`, rows[0]);
+      }
+      return rows[0];
+    } catch (error) {
+      logger.error('Error getting liquor by node_id:', error);
+      throw error;
+    }
+  }
+
   static async findOne(criteria) {
     try {
       // criteria 객체에서 key-value 쌍 추출

@@ -237,23 +237,34 @@ function IngredientPage() {
 
       {/* Category Tabs */}
       <Paper sx={{ mb: 4 }}>
-        <Tabs
-          value={selectedCategory}
-          onChange={handleCategoryChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          aria-label="ingredient categories"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          {categories.map((category) => (
-            <Tab 
-              key={category} 
-              value={category} 
-              label={category === 'all' ? '모든 카테고리' : category} 
-              sx={{ textTransform: 'capitalize' }}
-            />
-          ))}
-        </Tabs>
+        
+
+<Tabs
+  value={selectedCategory}
+  onChange={handleCategoryChange}
+  variant="scrollable"
+  scrollButtons="auto"
+  aria-label="ingredient categories"
+  sx={{ 
+    borderBottom: 1, 
+    borderColor: 'divider',
+    '& .MuiTab-root': {
+      color: '#000000',
+    },
+    '& .Mui-selected': {
+      color: '#E5C989', // 선택된 탭은 primary 색상 유지
+    }
+  }}
+>
+  {categories.map((category) => (
+    <Tab 
+      key={category} 
+      value={category} 
+      label={category === 'all' ? '모든 카테고리' : category} 
+      sx={{ textTransform: 'capitalize', color: '#000000' }}
+    />
+  ))}
+</Tabs>
       </Paper>
 
       {/* Active filters */}
@@ -312,44 +323,45 @@ function IngredientPage() {
                         alt={ingredient.name}
                       />
                       <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography gutterBottom variant="h6" component="div">
-                          {ingredient.name}
-                        </Typography>
-                        
-                        {ingredient.category && (
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            카테고리: {ingredient.category}
-                          </Typography>
-                        )}
-                        
-                        <Typography variant="body2" color="text.secondary">
-                          {ingredient.description ? 
-                            (ingredient.description.length > 100 
-                              ? `${ingredient.description.substring(0, 100)}...` 
-                              : ingredient.description) 
-                            : '설명이 없습니다.'
-                          }
-                        </Typography>
-                        
-                        {ingredient.flavor_profile && ingredient.flavor_profile.length > 0 && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              플레이버 프로파일:
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {ingredient.flavor_profile.map((flavor, index) => (
-                                <Chip 
-                                  key={index} 
-                                  label={flavor} 
-                                  size="small" 
-                                  color="secondary" 
-                                  variant="outlined"
-                                />
-                              ))}
-                            </Box>
-                          </Box>
-                        )}
-                      </CardContent>
+  <Typography gutterBottom variant="h6" component="div" sx={{ color: '#000000' }}>
+    {ingredient.name}
+  </Typography>
+  
+  {ingredient.category && (
+    <Typography variant="body2" sx={{ color: '#000000' }} gutterBottom>
+      카테고리: {ingredient.category}
+    </Typography>
+  )}
+  
+  <Typography variant="body2" sx={{ color: '#000000' }}>
+    {ingredient.description ? 
+      (ingredient.description.length > 100 
+        ? `${ingredient.description.substring(0, 100)}...` 
+        : ingredient.description) 
+      : '설명이 없습니다.'
+    }
+  </Typography>
+  
+  {ingredient.flavor_profile && ingredient.flavor_profile.length > 0 && (
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="body2" sx={{ mb: 1, color: '#000000' }}>
+        플레이버 프로파일:
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {ingredient.flavor_profile.map((flavor, index) => (
+          <Chip 
+            key={index} 
+            label={flavor} 
+            size="small" 
+            color="secondary" 
+            variant="outlined"
+            sx={{ color: '#000000', borderColor: '#000000' }}
+          />
+        ))}
+      </Box>
+    </Box>
+  )}
+</CardContent>
                     </CardActionArea>
                     
                     <IconButton

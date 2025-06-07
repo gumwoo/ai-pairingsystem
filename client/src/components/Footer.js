@@ -1,81 +1,270 @@
 import React from 'react';
-import { Box, Container, Typography, Grid, Link, Divider } from '@mui/material';
+import { Box, Container, Typography, Grid, Link, Divider, useTheme } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import LocalBarIcon from '@mui/icons-material/LocalBar';
+import WineBarIcon from '@mui/icons-material/WineBar';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 function Footer() {
+  const theme = useTheme();
+  const currentYear = new Date().getFullYear();
+  
   return (
     <Box
       component="footer"
       sx={{
-        py: 3,
-        px: 2,
+        position: 'relative',
         mt: 'auto',
-        backgroundColor: (theme) => theme.palette.grey[900],
-        color: 'white',
+        background: 'linear-gradient(135deg, #2C2C2C 0%, #1A1A1A 100%)',
+        color: 'rgba(255, 255, 255, 0.7)',
+        pt: 6,
+        pb: 4,
+        borderTop: '1px solid rgba(139, 69, 19, 0.2)',
       }}
     >
       <Container maxWidth="lg">
         <Grid container spacing={4}>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <LocalBarIcon sx={{ mr: 1 }} />
-              <Typography variant="h6" component="div">
-                AI 페어링 시스템
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <WineBarIcon 
+                sx={{ 
+                  color: '#D4AF37', 
+                  mr: 1.5, 
+                  fontSize: 32 
+                }} 
+              />
+              <Typography 
+                variant="h5" 
+                component="div"
+                sx={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 700,
+                  color: 'white',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                찰떡궁합
               </Typography>
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-              플레이버 프로파일과 사용자 취향을 기반으로 완벽한 조합을 추천하도록 설계된 설명 가능한 AI 기반 음식과 음료 페어링 시스템입니다.
+            
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 4, 
+                maxWidth: 400,
+                lineHeight: 1.7, 
+                color: 'rgba(255, 255, 255, 0.8)',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '1rem',
+              }}
+            >
+              AI 기반 분석으로 완벽한 주류와 음식의 페어링을 추천하는 전문적인 서비스입니다. 전문가 수준의 정확한 분석을 제공합니다.
             </Typography>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <LocationOnIcon sx={{ fontSize: 20, mr: 1.5, color: '#D4AF37' }} />
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                전북대학교 SW중심대학사업단
+              </Typography>
+            </Box>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6" gutterBottom>
-              네비게이션
+          <Grid item xs={12} md={3}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 3, 
+                color: 'white',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+                position: 'relative',
+                paddingBottom: 1.5,
+                '&:after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: 40,
+                  height: 2,
+                  backgroundColor: '#D4AF37',
+                  borderRadius: '1px',
+                }
+              }}
+            >
+              서비스
             </Typography>
-            <Link component={RouterLink} to="/" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              홈
-            </Link>
-            <Link component={RouterLink} to="/pairing" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              페어링
-            </Link>
-            <Link component={RouterLink} to="/liquors" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              주류
-            </Link>
-            <Link component={RouterLink} to="/ingredients" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              재료
-            </Link>
-            <Link component={RouterLink} to="/about" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              소개
-            </Link>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Link 
+                component={RouterLink} 
+                to="/" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease',
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.95rem',
+                  '&:hover': { 
+                    color: '#D4AF37',
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                홈
+              </Link>
+              <Link 
+                component={RouterLink} 
+                to="/pairing" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease',
+                  display: 'block',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.95rem',
+                  '&:hover': { 
+                    color: '#D4AF37',
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                페어링 분석
+              </Link>
+            </Box>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6" gutterBottom>
+          <Grid item xs={12} md={3}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 3, 
+                color: 'white',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+                position: 'relative',
+                paddingBottom: 1.5,
+                '&:after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: 40,
+                  height: 2,
+                  backgroundColor: '#D4AF37',
+                  borderRadius: '1px',
+                }
+              }}
+            >
               리소스
             </Typography>
-            <Link href="https://github.com/gumwoo/ai-pairingsystem" color="inherit" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <GitHubIcon sx={{ mr: 1 }} fontSize="small" />
-              깃허브 저장소
-            </Link>
-            <Link href="#" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              API 문서
-            </Link>
-            <Link href="#" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              개인정보 처리방침
-            </Link>
-            <Link href="#" color="inherit" sx={{ display: 'block', mb: 1 }}>
-              서비스 이용약관
-            </Link>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Link 
+                href="https://github.com/woojung1234/ai-pairingsystem" 
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  display: 'flex', 
+                  alignItems: 'center',
+                  transition: 'all 0.3s ease',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.95rem',
+                  '&:hover': { 
+                    color: '#D4AF37',
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                <GitHubIcon sx={{ mr: 1.5, fontSize: 18 }} />
+                GitHub 저장소
+              </Link>
+              
+              <Link 
+                href="#"
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  display: 'block',
+                  transition: 'all 0.3s ease',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.95rem',
+                  '&:hover': { 
+                    color: '#D4AF37',
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                API 문서
+              </Link>
+              
+              <Link 
+                href="#"
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  display: 'block',
+                  transition: 'all 0.3s ease',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '0.95rem',
+                  '&:hover': { 
+                    color: '#D4AF37',
+                    transform: 'translateX(4px)',
+                  },
+                }}
+              >
+                이용약관
+              </Link>
+            </Box>
           </Grid>
         </Grid>
         
-        <Divider sx={{ my: 2, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+        <Divider 
+          sx={{ 
+            my: 4, 
+            backgroundColor: 'rgba(139, 69, 19, 0.2)' 
+          }} 
+        />
         
-        <Typography variant="body2" color="text.secondary" align="center" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-          © {new Date().getFullYear()} AI 페어링 시스템. 모든 권리 보유.
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'center', sm: 'flex-start' },
+            textAlign: { xs: 'center', sm: 'left' },
+          }}
+        >
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.875rem',
+            }}
+          >
+            © {currentYear} 찰떡궁합. 모든 권리 보유.
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: { xs: 1, sm: 0 }, 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.875rem',
+            }}
+          >
+            전북대학교 캡스톤 디자인 프로젝트
+          </Typography>
+        </Box>
       </Container>
     </Box>
   );

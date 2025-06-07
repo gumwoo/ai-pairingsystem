@@ -10,6 +10,55 @@ const pairingController = require('../controllers/pairingController');
 router.post('/predict', pairingController.predictPairingScore);
 
 /**
+ * @route   POST /api/pairing/korean/predict
+ * @desc    Predict pairing score with Korean input
+ * @access  Public
+ */
+router.post('/korean/predict', pairingController.predictPairingScoreKorean);
+
+/**
+ * @route   POST /api/pairing/korean/best
+ * @desc    Find the best pairing combination for Korean liquor and ingredient input
+ * @access  Public
+ */
+router.post('/korean/best', pairingController.findBestPairingKorean);
+
+/**
+ * @route   POST /api/pairing/korean/recommend
+ * @desc    Get ingredient recommendations with Korean liquor input
+ * @access  Public
+ */
+router.post('/korean/recommend', pairingController.getRecommendationsKorean);
+
+/**
+ * @route   POST /api/pairing/korean/recommend-liquors
+ * @desc    🆕 Get liquor recommendations with Korean ingredient input
+ * @access  Public
+ */
+router.post('/korean/recommend-liquors', pairingController.getLiquorRecommendationsKorean);
+
+/**
+ * @route   POST /api/pairing/korean/ingredient-to-liquor
+ * @desc    Get liquor recommendations for Korean ingredient input (alternative endpoint)
+ * @access  Public
+ */
+router.post('/korean/ingredient-to-liquor', pairingController.getLiquorRecommendationsForIngredient);
+
+/**
+ * @route   GET /api/pairing/korean/search
+ * @desc    Search liquors and ingredients by Korean text
+ * @access  Public
+ */
+router.get('/korean/search', pairingController.searchByKorean);
+
+/**
+ * @route   GET /api/pairing/score-statistics
+ * @desc    Get score statistics for calibrating normalization range
+ * @access  Public
+ */
+router.get('/score-statistics', pairingController.getScoreStatistics);
+
+/**
  * @route   GET /api/pairing/score/:liquorId/:ingredientId
  * @desc    Get pairing score for a liquor and ingredient
  * @access  Public

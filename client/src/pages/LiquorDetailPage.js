@@ -37,6 +37,36 @@ import {
 
 import { getLiquorById, getRecommendations } from '../services/api';
 
+// 영어 주류명을 한국어로 변환하는 함수
+function getKoreanName(englishName) {
+  const liquorMapping = {
+    'ale': '에일',
+    'beer': '맥주',
+    'lager': '라거',
+    'bourbon': '버번',
+    'bourbon whiskey': '버번 위스키',
+    'whiskey': '위스키',
+    'whisky': '위스키',
+    'vodka': '보드카',
+    'gin': '진',
+    'rum': '럼',
+    'dark rum': '다크 럼',
+    'white rum': '화이트 럼',
+    'tequila': '테킬라',
+    'wine': '와인',
+    'red wine': '적포도주',
+    'white wine': '백포도주',
+    'champagne': '샴페인',
+    'sake': '사케',
+    'soju': '소주',
+    'brandy': '브랜디',
+    'cognac': '코냑'
+  };
+  
+  const normalizedName = englishName.toLowerCase();
+  return liquorMapping[normalizedName] || englishName;
+}
+
 function LiquorDetailPage() {
   const { id } = useParams();
   const [liquor, setLiquor] = useState(null);
@@ -347,7 +377,7 @@ function LiquorDetailPage() {
               {tabValue === 1 && (
                 <>
                   <Typography variant="h6" gutterBottom>
-                    최고의 음식 페어링
+                    {getKoreanName(liquor.name)} 추천 재료 TOP 3
                   </Typography>
                   
                   {recommendations && recommendations.length > 0 ? (

@@ -31,6 +31,26 @@ class Ingredient {
       throw error;
     }
   }
+
+  static async getByNodeId(nodeId) {
+    try {
+      console.log(`Ingredient.getByNodeId: Looking for node_id = ${nodeId}`);
+      const [rows] = await pool.query(`
+        SELECT i.*, n.is_hub, n.created_at as node_created_at, n.updated_at as node_updated_at
+        FROM ingredients i
+        JOIN nodes n ON i.node_id = n.id
+        WHERE n.node_id = ?
+      `, [nodeId]);
+      console.log(`Ingredient.getByNodeId: Found ${rows.length} rows`);
+      if (rows.length > 0) {
+        console.log(`Ingredient.getByNodeId: First row:`, rows[0]);
+      }
+      return rows[0];
+    } catch (error) {
+      logger.error('Error getting ingredient by node_id:', error);
+      throw error;
+    }
+  }
   
   static async findOne(criteria) {
     try {

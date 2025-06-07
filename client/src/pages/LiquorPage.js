@@ -363,43 +363,44 @@ function LiquorPage() {
                         alt={liquor.name}
                       />
                       <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography gutterBottom variant="h6" component="div">
-                          {liquor.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          유형: {liquor.type || '알 수 없음'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          원산지: {liquor.origin || '알 수 없음'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {liquor.description ? 
-                            (liquor.description.length > 100 
-                              ? `${liquor.description.substring(0, 100)}...` 
-                              : liquor.description) 
-                            : '설명이 없습니다.'
-                          }
-                        </Typography>
-                        
-                        {liquor.flavor_profile && liquor.flavor_profile.length > 0 && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              플레이버 프로파일:
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {liquor.flavor_profile.map((flavor, index) => (
-                                <Chip 
-                                  key={index} 
-                                  label={flavor} 
-                                  size="small" 
-                                  color="primary" 
-                                  variant="outlined"
-                                />
-                              ))}
-                            </Box>
-                          </Box>
-                        )}
-                      </CardContent>
+  <Typography gutterBottom variant="h6" component="div" sx={{ color: '#000000' }}>
+    {liquor.name}
+  </Typography>
+  <Typography variant="body2" sx={{ color: '#000000' }} gutterBottom>
+    유형: {liquor.type || '알 수 없음'}
+  </Typography>
+  <Typography variant="body2" sx={{ color: '#000000' }} gutterBottom>
+    원산지: {liquor.origin || '알 수 없음'}
+  </Typography>
+  <Typography variant="body2" sx={{ color: '#000000' }}>
+    {liquor.description ? 
+      (liquor.description.length > 100 
+        ? `${liquor.description.substring(0, 100)}...` 
+        : liquor.description) 
+      : '설명이 없습니다.'
+    }
+  </Typography>
+  
+  {liquor.flavor_profile && liquor.flavor_profile.length > 0 && (
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="body2" sx={{ mb: 1, color: '#000000' }}>
+        플레이버 프로파일:
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {liquor.flavor_profile.map((flavor, index) => (
+          <Chip 
+            key={index} 
+            label={flavor} 
+            size="small" 
+            color="primary" 
+            variant="outlined"
+            sx={{ color: '#000000', borderColor: '#000000' }}
+          />
+        ))}
+      </Box>
+    </Box>
+  )}
+</CardContent>
                     </CardActionArea>
                     
                     <IconButton
