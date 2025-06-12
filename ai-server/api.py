@@ -45,6 +45,7 @@ edges_weights = None
 edge_type = None
 liquor_names = None
 ingredient_names = None
+avg_scores = None
 
 # Model request/response schemas
 class PairingRequest(BaseModel):
@@ -176,7 +177,7 @@ def generate_simple_explanation(liquor_name: str, ingredient_name: str, score: f
 
 @app.on_event("startup")
 async def startup_event():
-    global model, lid_to_idx, iid_to_idx, idx_to_lid, idx_to_iid, edges_indexes, edges_weights, edge_type, liquor_names, ingredient_names
+    global model, lid_to_idx, iid_to_idx, idx_to_lid, idx_to_iid, edges_indexes, edges_weights, edge_type, liquor_names, ingredient_names, avg_scores
     
     try:
         print("Loading node mappings...")
@@ -187,6 +188,9 @@ async def startup_event():
         # Create reverse mappings
         idx_to_lid = {v: k for k, v in lid_to_idx.items()}
         idx_to_iid = {v: k for k, v in iid_to_idx.items()}
+
+        avg_scores = pd.read_csv("./liquor_scores.csv")
+        avg_scores = avg_scores.set_index('node_id')['avg_score'].to_dict()
         
         print("Loading edge indices...")
         edge_type_map = {
@@ -252,7 +256,11 @@ async def get_score_only(request: ScoreOnlyRequest):
                 torch.tensor([liquor_idx]), 
                 torch.tensor([ingredient_idx])
             ).item()
-        
+
+        avg_score = avg_scores.get(request.liquor_id, 0.0)
+
+        score = score - avg_score
+
         return ScoreOnlyResponse(score=score)
     
     except Exception as e:
