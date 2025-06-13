@@ -30,8 +30,8 @@ function legacyNormalizeScoreTo100(rawScore) {
   if (typeof rawScore !== 'number') return 0;
   
   const LEGACY_SCORE_RANGE = {
-    min: -5.0,  // 기존 범위
-    max: 6.0
+    min: -30.0,  // 기존 범위
+    max: 20.0
   };
   
   const normalized = ((rawScore - LEGACY_SCORE_RANGE.min) / (LEGACY_SCORE_RANGE.max - LEGACY_SCORE_RANGE.min)) * 100;
@@ -44,22 +44,10 @@ function legacyNormalizeScoreTo100(rawScore) {
  * @param {Number} rawScore - AI 서버에서 받은 원본 점수
  * @returns {Number} 0-100 범위로 정규화된 점수
  */
+// pairingController.js의 smartNormalizeScoreTo100 함수 수정
 function smartNormalizeScoreTo100(rawScore) {
-  if (typeof rawScore !== 'number') return 0;
-  
-  // 0~1 범위인 경우 (sigmoid 적용된 모델)
-  if (rawScore >= 0 && rawScore <= 1) {
-    return Math.round(rawScore * 100);
-  }
-  
-  // -5~6 범위인 경우 (기존 모델)
-  if (rawScore >= -6 && rawScore <= 7) {
-    return legacyNormalizeScoreTo100(rawScore);
-  }
-  
-  // 그 외의 경우 - 일반적인 정규화 시도
-  console.warn(`⚠️ Unexpected score range: ${rawScore}. Using fallback normalization.`);
-  return Math.max(0, Math.min(100, Math.round(Math.abs(rawScore) * 10)));
+  // AI 서버가 이미 0~100 점수를 주므로 그대로 사용
+  return Math.round(rawScore);
 }
 
 /**
