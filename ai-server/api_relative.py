@@ -47,7 +47,7 @@ liquor_names = None
 ingredient_names = None
 avg_scores = None
 
-# 🔥 Raw score 통계를 저장할 변수들 (모니터링용)
+# 🔥 실제 raw score 통계를 저장할 변수들
 raw_score_stats = {
     'min': float('inf'),
     'max': float('-inf'),
@@ -96,59 +96,81 @@ def normalize_raw_score_to_100(raw_score):
     """
     global raw_score_stats
     
-    # inf, -inf, NaN 값 처리
-    if np.isinf(raw_score) or np.isnan(raw_score):
-        print(f"⚠️ Invalid raw score detected: {raw_score}, using default score 50")
-        return 50.0
-    
     # 통계 업데이트 (모니터링용)
-    if np.isfinite(raw_score):
-        raw_score_stats['min'] = min(raw_score_stats['min'], raw_score)
-        raw_score_stats['max'] = max(raw_score_stats['max'], raw_score)
-        raw_score_stats['samples'].append(raw_score)
+    raw_score_stats['min'] = min(raw_score_stats['min'], raw_score)
+    raw_score_stats['max'] = max(raw_score_stats['max'], raw_score)
+    raw_score_stats['samples'].append(raw_score)
     
-    # 절대적 평가 기준 적용 (실제 분포 반영)
-    if raw_score >= 10.0:     # 95-100점: 정말 뛰어난 조합 (극소수)
-        score = 95 + min(5, (raw_score - 10.0) * 0.5)
+    # 절대적 평가 기준 적용
+    if raw_score >= 2.0:      # 90-100점: 정말 뛰어난 조합
+        score = 90 + min(10, (raw_score - 2.0) * 5)
         level = "🌟 최고의 조합"
-    elif raw_score >= 5.0:    # 90-94점: 매우 뛰어난 조합
-        score = 90 + (raw_score - 5.0)
-        level = "⭐ 매우 뛰어난 조합"
-    elif raw_score >= 2.0:    # 80-89점: 뛰어난 조합
-        score = 80 + ((raw_score - 2.0) / 3.0) * 10
+    elif raw_score >= 0.0:    # 80-89점: 매우 좋은 조합
+        score = 80 + (raw_score / 2.0) * 10
         level = "⭐ 뛰어난 조합"
-    elif raw_score >= 0.0:    # 70-79점: 좋은 조합
-        score = 70 + (raw_score / 2.0) * 10
+    elif raw_score >= -2.0:   # 70-79점: 좋은 조합
+        score = 70 + ((raw_score + 2.0) / 2.0) * 10
         level = "👍 좋은 조합"
-    elif raw_score >= -2.0:   # 60-69점: 괜찮은 조합
-        score = 60 + ((raw_score + 2.0) / 2.0) * 10
+    elif raw_score >= -4.0:   # 60-69점: 괜찮은 조합
+        score = 60 + ((raw_score + 4.0) / 2.0) * 10
         level = "👌 괜찮은 조합"
-    elif raw_score >= -4.0:   # 50-59점: 보통 조합
-        score = 50 + ((raw_score + 4.0) / 2.0) * 10
+    elif raw_score >= -6.0:   # 50-59점: 보통 조합
+        score = 50 + ((raw_score + 6.0) / 2.0) * 10
         level = "😐 보통 조합"
-    elif raw_score >= -6.0:   # 40-49점: 아쉬운 조합
-        score = 40 + ((raw_score + 6.0) / 2.0) * 10
+    elif raw_score >= -8.0:   # 40-49점: 아쉬운 조합
+        score = 40 + ((raw_score + 8.0) / 2.0) * 10
         level = "😕 아쉬운 조합"
-    elif raw_score >= -8.0:   # 30-39점: 별로인 조합
-        score = 30 + ((raw_score + 8.0) / 2.0) * 10
+    elif raw_score >= -10.0:  # 30-39점: 별로인 조합
+        score = 30 + ((raw_score + 10.0) / 2.0) * 10
         level = "😞 별로인 조합"
-    elif raw_score >= -10.0:  # 20-29점: 매우 별로인 조합
-        score = 20 + ((raw_score + 10.0) / 2.0) * 10
-        level = "😞 매우 별로인 조합"
-    else:                     # 0-19점: 추천하지 않음
-        score = max(0, 20 + ((raw_score + 10.0) / 2.0) * 20)
+    else:                     # 0-29점: 추천하지 않음
+        score = max(0, 30 + ((raw_score + 10.0) / 2.0) * 30)
         level = "❌ 추천하지 않음"
     
     result = max(0, min(100, round(score)))
     
-    # 유효한 결과인지 확인
-    if np.isinf(result) or np.isnan(result):
-        print(f"⚠️ Invalid result detected: {result}, using default score 50")
-        result = 50.0
-    
     print(f"🎯 Raw score: {raw_score:.4f} → {result}점 ({level})")
     
-    return float(result)
+    return result
+    """
+    실제 관찰된 raw score 범위를 기반으로 0~100 정규화
+    동적으로 범위를 업데이트하면서 정규화
+    """
+    global raw_score_stats
+    
+    # 통계 업데이트
+    raw_score_stats['min'] = min(raw_score_stats['min'], raw_score)
+    raw_score_stats['max'] = max(raw_score_stats['max'], raw_score)
+    raw_score_stats['samples'].append(raw_score)
+    
+    # 샘플이 충분히 모이면 더 정확한 범위 사용
+    if len(raw_score_stats['samples']) > 100:
+        # 극값 제거한 범위 사용 (5%tile ~ 95%tile)
+        samples = sorted(raw_score_stats['samples'])
+        min_score = samples[int(len(samples) * 0.05)]
+        max_score = samples[int(len(samples) * 0.95)]
+    else:
+        # 초기에는 관찰된 min/max 사용
+        min_score = raw_score_stats['min']
+        max_score = raw_score_stats['max']
+    
+    # 범위가 너무 좁으면 기본값 사용
+    if max_score - min_score < 1.0:
+        min_score = -5.0
+        max_score = 5.0
+    
+    # Min-Max 정규화
+    if max_score != min_score:
+        normalized = ((raw_score - min_score) / (max_score - min_score)) * 100
+    else:
+        normalized = 50.0  # 기본값
+    
+    # 0~100 범위로 클램핑
+    result = max(0, min(100, round(normalized)))
+    
+    print(f"🔍 Raw score: {raw_score:.4f}, Range: [{min_score:.2f}, {max_score:.2f}], Normalized: {result}")
+    
+    return result
 
 # Model request/response schemas
 class PairingRequest(BaseModel):
@@ -267,20 +289,14 @@ def generate_simple_explanation(liquor_name: str, ingredient_name: str, score: f
     """Generate simple rule-based explanation as fallback"""
     explanation = f"{liquor_name}과(와) {ingredient_name}의 페어링 점수는 {score:.0f}점입니다. "
     
-    if score >= 90:
-        explanation += "정말 뛰어난 조합으로, 완벽한 하모니를 자랑합니다."
-    elif score >= 80:
+    if score > 80:
         explanation += "매우 훌륭한 조합으로, 맛과 향이 완벽하게 조화를 이룹니다."
-    elif score >= 70:
+    elif score > 60:
         explanation += "좋은 페어링으로, 여러 풍미 요소가 잘 어울립니다."
-    elif score >= 60:
-        explanation += "괜찮은 조합으로, 무난하게 즐기실 수 있습니다."
-    elif score >= 50:
-        explanation += "보통 수준의 조합입니다."
-    elif score >= 40:
-        explanation += "아쉬운 조합이지만 취향에 따라 즐기실 수 있습니다."
+    elif score > 40:
+        explanation += "무난한 조합이지만 특별함은 부족합니다."
     else:
-        explanation += "이 조합은 그다지 잘 어울리지 않아 추천하지 않습니다."
+        explanation += "이 조합은 그다지 잘 어울리지 않습니다."
     
     return explanation
 
@@ -330,24 +346,24 @@ async def startup_event():
         liquor_names = {row['node_id']: row['name'] for _, row in nodes_df.iterrows() if row['node_type'] == 'liquor'}
         ingredient_names = {row['node_id']: row['name'] for _, row in nodes_df.iterrows() if row['node_type'] == 'ingredient'}
         
-        print("🎯 절대적 평가 기준 적용 완료 - API is ready")
+        print("Startup complete - API is ready")
     except Exception as e:
         print(f"Error during startup: {str(e)}")
         raise e
 
 @app.get("/")
 async def root():
-    return {"message": "AI Pairing System API - 절대적 평가 기준 적용", "status": "active"}
+    return {"message": "AI Pairing System API", "status": "active"}
 
 @app.get("/health")
 async def health_check():
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    return {"status": "healthy", "evaluation_method": "absolute_scoring"}
+    return {"status": "healthy"}
 
 @app.post("/score-only", response_model=ScoreOnlyResponse)
 async def get_score_only(request: ScoreOnlyRequest):
-    """점수만 계산하는 엔드포인트 - 절대적 평가 기준 적용"""
+    """점수만 계산하는 엔드포인트 - Raw score 기반 정규화"""
     try:
         # Check if IDs exist
         if request.liquor_id not in lid_to_idx:
@@ -359,21 +375,19 @@ async def get_score_only(request: ScoreOnlyRequest):
         liquor_idx = lid_to_idx[request.liquor_id]
         ingredient_idx = iid_to_idx[request.ingredient_id]
         
-        # 🎯 Raw score 추출 및 절대적 평가 기준 적용
+        # 🔥 Raw score 추출 및 정규화
         raw_score = get_raw_score_from_model(liquor_idx, ingredient_idx)
-        absolute_score = normalize_raw_score_to_100(raw_score)
+        normalized_score = normalize_raw_score_to_100(raw_score)
 
-        return ScoreOnlyResponse(score=absolute_score)
+        return ScoreOnlyResponse(score=normalized_score)
     
     except Exception as e:
-        import traceback
-        error_msg = f"Error in score prediction: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
+        print(f"Error in score prediction: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/explanation-only", response_model=ExplanationResponse)
 async def get_explanation_only(request: ExplanationRequest):
-    """설명만 생성하는 엔드포인트 - 절대적 평가 기준 적용"""
+    """설명만 생성하는 엔드포인트 - Raw score 기반"""
     try:
         # Check if IDs exist
         if request.liquor_id not in lid_to_idx:
@@ -411,7 +425,7 @@ async def get_explanation_only(request: ExplanationRequest):
 
 @app.post("/predict", response_model=PairingResponse)
 async def predict_pairing(request: PairingRequest):
-    """기존 방식 (점수 + 설명 한번에) - 절대적 평가 기준 적용"""
+    """기존 방식 (점수 + 설명 한번에) - Raw score 기반"""
     try:
         # Check if IDs exist
         if request.liquor_id not in lid_to_idx:
@@ -423,7 +437,7 @@ async def predict_pairing(request: PairingRequest):
         liquor_idx = lid_to_idx[request.liquor_id]
         ingredient_idx = iid_to_idx[request.ingredient_id]
         
-        # 🎯 Raw score 추출 및 절대적 평가 기준 적용
+        # 🔥 Raw score 추출 및 정규화
         raw_score = get_raw_score_from_model(liquor_idx, ingredient_idx)
         score = normalize_raw_score_to_100(raw_score)
         
@@ -450,7 +464,7 @@ async def predict_pairing(request: PairingRequest):
 
 @app.post("/recommend", response_model=RecommendationResponse)
 async def recommend_ingredients(request: RecommendationRequest):
-    """추천 엔드포인트 - 절대적 평가 기준 적용"""
+    """추천 엔드포인트 - Raw score 기반"""
     try:
         # Check if liquor ID exists
         if request.liquor_id not in lid_to_idx:
@@ -462,18 +476,18 @@ async def recommend_ingredients(request: RecommendationRequest):
         # Get all ingredient indices
         all_ingredient_indices = list(idx_to_iid.keys())
         
-        # 🎯 계산할 재료 개수 제한 (전체를 계산하면 너무 오래 걸림)
+        # 🔥 계산할 재료 개수 제한 (전체를 계산하면 너무 오래 걸림)
         max_ingredients_to_test = min(100, len(all_ingredient_indices))  # 최대 100개만 테스트
         ingredient_indices = all_ingredient_indices[:max_ingredients_to_test]
         
-        print(f"🎯 Testing {len(ingredient_indices)} ingredients out of {len(all_ingredient_indices)} total")
+        print(f"🔍 Testing {len(ingredient_indices)} ingredients out of {len(all_ingredient_indices)} total")
         
-        # 🎯 각 재료에 대해 절대적 평가 기준으로 점수 계산
+        # 🔥 각 재료에 대해 raw score 계산
         scores = []
         for ingredient_idx in ingredient_indices:
             raw_score = get_raw_score_from_model(liquor_idx, ingredient_idx)
-            absolute_score = normalize_raw_score_to_100(raw_score)
-            scores.append(absolute_score)
+            normalized_score = normalize_raw_score_to_100(raw_score)
+            scores.append(normalized_score)
         
         # Get top N ingredients
         top_limit = min(request.limit, 3)
@@ -516,53 +530,33 @@ async def recommend_ingredients(request: RecommendationRequest):
 @app.get("/raw-score-stats")
 async def get_raw_score_stats():
     """Raw score 통계 확인용 엔드포인트"""
-    min_val = raw_score_stats['min'] if np.isfinite(raw_score_stats['min']) else 0.0
-    max_val = raw_score_stats['max'] if np.isfinite(raw_score_stats['max']) else 0.0
-    
     return {
-        "evaluation_method": "absolute_scoring",
-        "min": float(min_val),
-        "max": float(max_val),
+        "min": raw_score_stats['min'],
+        "max": raw_score_stats['max'],
         "sample_count": len(raw_score_stats['samples']),
-        "latest_samples": [float(x) for x in raw_score_stats['samples'][-10:] if np.isfinite(x)],
-        "scoring_criteria": {
-            "90-100": "raw_score >= 2.0 (🌟 최고의 조합)",
-            "80-89": "0.0 <= raw_score < 2.0 (⭐ 뛰어난 조합)", 
-            "70-79": "-2.0 <= raw_score < 0.0 (👍 좋은 조합)",
-            "60-69": "-4.0 <= raw_score < -2.0 (👌 괜찮은 조합)",
-            "50-59": "-6.0 <= raw_score < -4.0 (😐 보통 조합)",
-            "40-49": "-8.0 <= raw_score < -6.0 (😕 아쉬운 조합)",
-            "30-39": "-10.0 <= raw_score < -8.0 (😞 별로인 조합)",
-            "0-29": "raw_score < -10.0 (❌ 추천하지 않음)"
-        }
+        "latest_samples": raw_score_stats['samples'][-10:] if raw_score_stats['samples'] else []
     }
 
 @app.get("/liquors", response_model=List[Dict[str, Any]])
 async def get_liquors():
     try:
-        liquors_list = []
-        for lid, name in liquor_names.items():
-            liquors_list.append({
-                "id": lid,
-                "name": name
-            })
-        return liquors_list
+        return [
+            {"id": lid, "name": liquor_names.get(lid, f"Liquor {lid}")}
+            for lid in lid_to_idx.keys()
+        ]
     except Exception as e:
-        print(f"Error getting liquors: {str(e)}")
+        print(f"Error fetching liquors: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/ingredients", response_model=List[Dict[str, Any]])
 async def get_ingredients():
     try:
-        ingredients_list = []
-        for iid, name in ingredient_names.items():
-            ingredients_list.append({
-                "id": iid,
-                "name": name
-            })
-        return ingredients_list
+        return [
+            {"id": iid, "name": ingredient_names.get(iid, f"Ingredient {iid}")}
+            for iid in iid_to_idx.keys()
+        ]
     except Exception as e:
-        print(f"Error getting ingredients: {str(e)}")
+        print(f"Error fetching ingredients: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

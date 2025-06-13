@@ -6,21 +6,23 @@ class KoreanToNodeIdMapper {
     this.nodesData = null;
     this.liquorMap = new Map();
     this.ingredientMap = new Map();
-    this.koreanToEnglishMap = new Map(); // CSV 매핑
+    this.koreanToEnglishMap = new Map();
     
-    console.log('🚀 Initializing Korean Mapper (CSV-only mode)...');
+    console.log('🚀 Initializing Korean Mapper...');
     this.koreanMappings = this.loadKoreanMappings();
-    this.loadKoreanLiquorMapping(); // CSV 로드
-    this.loadNodesData(); // fallback 없이 CSV만 사용
+    this.loadKoreanLiquorMapping();
+    this.loadNodesData();
     console.log('✅ Korean Mapper initialization complete');
   }
 
   loadKoreanLiquorMapping() {
+    console.log('📁 Loading Korean liquor mapping...');
     try {
       const csvPath = path.join(__dirname, '../../English-Korean_Liquor_Names.csv');
+      console.log(`🔍 Looking for Korean liquor CSV at: ${csvPath}`);
       
       if (!fs.existsSync(csvPath)) {
-        console.warn('⚠️ Korean liquor mapping CSV file not found (optional feature)');
+        console.warn(`⚠️ Korean liquor mapping CSV file not found at: ${csvPath}`);
         return;
       }
       
@@ -34,7 +36,6 @@ class KoreanToNodeIdMapper {
             const cleanLiquorName = liquor_name.trim();
             const cleanKoreanName = korean_name.trim();
             
-            // 한국어 이름을 키로, 영어 이름을 값으로 저장
             this.koreanToEnglishMap.set(cleanKoreanName, cleanLiquorName);
           }
         }
@@ -47,38 +48,18 @@ class KoreanToNodeIdMapper {
   }
 
   loadNodesData() {
-    // Docker 환경과 로컬 환경 모두 지원하는 경로들
-    const possiblePaths = [
-      path.join(__dirname, '../../../ai-server/dataset/nodes_191120_updated.csv'), // 로컬 환경
-      path.join('/ai-server/dataset/nodes_191120_updated.csv'), // Docker 환경 (볼륨 마운트)
-      path.join(__dirname, '../../dataset/nodes_191120_updated.csv'), // 대체 경로
-      path.join(process.cwd(), 'ai-server/dataset/nodes_191120_updated.csv') // 프로젝트 루트 기준
-    ];
-
-    let csvPath = null;
-    let csvData = null;
-
-    // 가능한 경로들을 순서대로 시도
-    for (const testPath of possiblePaths) {
-      if (fs.existsSync(testPath)) {
-        csvPath = testPath;
-        console.log(`✅ Found CSV file at: ${csvPath}`);
-        break;
-      } else {
-        console.log(`❌ CSV file not found at: ${testPath}`);
-      }
-    }
-    
-    if (!csvPath) {
-      console.error('❌ Tried all possible paths for nodes CSV file:');
-      possiblePaths.forEach(p => console.error(`   - ${p}`));
-      throw new Error(`❌ Critical: Required CSV file not found in any of the expected locations`);
-    }
-    
+    console.log('📁 Loading nodes data...');
     try {
-      console.log(`📁 Loading nodes data from: ${csvPath}`);
+      const csvPath = path.join(__dirname, '../../../ai-server/dataset/nodes_191120_updated.csv');
+      console.log(`🔍 Looking for nodes CSV at: ${csvPath}`);
       
-      csvData = fs.readFileSync(csvPath, 'utf-8');
+      if (!fs.existsSync(csvPath)) {
+        console.warn(`⚠️ CSV file not found at: ${csvPath}, using fallback data`);
+        this.loadFallbackData();
+        return;
+      }
+      
+      const csvData = fs.readFileSync(csvPath, 'utf-8');
       const lines = csvData.split('\n').slice(1); // 헤더 제거
       
       lines.forEach(line => {
@@ -103,15 +84,154 @@ class KoreanToNodeIdMapper {
         }
       });
       
-      console.log(`✅ Successfully loaded ${this.liquorMap.size} liquors and ${this.ingredientMap.size} ingredients from CSV`);
-      
-      if (this.liquorMap.size === 0 || this.ingredientMap.size === 0) {
-        throw new Error('❌ No valid data found in CSV file - system cannot function');
-      }
-      
+      console.log(`✅ Loaded ${this.liquorMap.size} liquors and ${this.ingredientMap.size} ingredients from CSV`);
     } catch (error) {
-      console.error('❌ Critical error loading nodes data:', error);
-      throw new Error(`❌ Failed to load required CSV data: ${error.message}`);
+      console.error('❌ Error loading nodes data:', error);
+      this.loadFallbackData();
+    }
+  }
+
+  loadFallbackData() {
+    console.log('🔄 Loading fallback data...');
+    
+    // 더 확장된 기본 데이터
+    const fallbackData = {
+      liquors: {
+        39: 'absinthe',
+        40: 'absolut_citron_vodka',
+        75: 'ale',
+        96: 'almond_flavored_liqueur',
+        100: 'almond_liqueur',
+        120: 'amaretto_liqueur',
+        122: 'amber_beer',
+        123: 'amber_rum',
+        159: 'apple_brandy',
+        167: 'apple_liqueur',
+        177: 'apricot_brandy',
+        184: 'apricot_liqueur',
+        194: 'armagnac',
+        311: 'banana_liqueur',
+        423: 'beer',
+        519: 'blackberry_brandy',
+        521: 'blackberry_liqueur',
+        524: 'blackberry_wine',
+        652: 'bourbon',
+        653: 'bourbon_whiskey',
+        662: 'brandy',
+        755: 'brut_champagne',
+        777: 'burgundy_wine',
+        827: 'cabernet_sauvignon_wine',
+        1069: 'champagne',
+        1079: 'chardonnay_wine',
+        1112: 'cherry_brandy',
+        1115: 'cherry_flavored_liqueur',
+        1137: 'chianti_wine',
+        1246: 'chinese_rice_wine',
+        1251: 'chinese_wine',
+        1317: 'chocolate_liqueur',
+        1361: 'cider',
+        1441: 'coconut_liqueur',
+        1448: 'coconut_rum',
+        1462: 'coffee_flavored_liqueur',
+        1465: 'coffee_liqueur',
+        1467: 'cognac',
+        1468: 'cointreau_liqueur',
+        1627: 'corona_beer',
+        1830: 'dark_rum',
+        1821: 'dark_jamaican_rum',
+        2102: 'dry_champagne',
+        2112: 'dry_gin',
+        2119: 'dry_marsala_wine',
+        2135: 'dry_red_wine',
+        2149: 'dry_vermouth',
+        2151: 'dry_white_vermouth',
+        2152: 'dry_white_wine',
+        2153: 'dry_wine',
+        2204: 'elderflower_liqueur',
+        2413: 'framboise_liqueur',
+        // 와인 관련 추가
+        2234: 'port_wine',
+        2235: 'port',
+        2236: 'red_wine',
+        2237: 'white_wine',
+        2238: 'wine',
+        5587: 'sake'
+      },
+      ingredients: {
+        88: 'almond',
+        158: 'apple',
+        175: 'apricot',
+        223: 'avocado',
+        302: 'banana',
+        328: 'basil',
+        361: 'beef',
+        518: 'blackberry',
+        547: 'blueberry',
+        668: 'bread',
+        781: 'butter',
+        805: 'buttermilk',
+        823: 'cabbage',
+        885: 'candy_bar',
+        966: 'caper',
+        1005: 'carrot',
+        1014: 'cashew_nut',
+        1041: 'celery',
+        1083: 'cheddar_cheese',
+        1089: 'cheese',
+        1111: 'cherry',
+        1125: 'cherry_tomato',
+        1138: 'chicken',
+        1204: 'chickpea',
+        1266: 'chocolate',
+        1368: 'cinnamon',
+        1458: 'coffee',
+        1595: 'corn',
+        1598: 'corn_chip',
+        1631: 'cottage_cheese',
+        1645: 'crab',
+        1664: 'cranberry',
+        1681: 'cream',
+        1682: 'cream_cheese',
+        1768: 'cucumber',
+        1845: 'date',
+        1895: 'dill',
+        2188: 'egg',
+        2200: 'eggplant',
+        2320: 'feta_cheese',
+        2331: 'fig',
+        2364: 'fish',
+        2396: 'flour',
+        2430: 'french_fry',
+        2547: 'fresh_pea',
+        2591: 'fresh_tomato',
+        // 치즈 관련 더 추가
+        2500: 'mozzarella_cheese',
+        2501: 'brie_cheese',
+        2502: 'goat_cheese'
+      }
+    };
+
+    for (const [nodeId, name] of Object.entries(fallbackData.liquors)) {
+      this.liquorMap.set(name.toLowerCase(), parseInt(nodeId));
+    }
+
+    for (const [nodeId, name] of Object.entries(fallbackData.ingredients)) {
+      this.ingredientMap.set(name.toLowerCase(), parseInt(nodeId));
+    }
+
+    console.log(`✅ Loaded fallback data: ${this.liquorMap.size} liquors, ${this.ingredientMap.size} ingredients`);
+    
+    // 디버그: 와인과 치즈가 있는지 확인
+    console.log('🔍 Debug - Checking for wine and cheese in data:');
+    for (const [name, nodeId] of this.liquorMap.entries()) {
+      if (name.includes('wine')) {
+        console.log(`  🍷 Found wine: ${name} → ${nodeId}`);
+      }
+    }
+    for (const [name, nodeId] of this.ingredientMap.entries()) {
+      if (name.includes('cheese')) {
+        console.log(`  🧀 Found cheese: ${name} → ${nodeId}`);
+      }
     }
   }
 
@@ -193,98 +313,13 @@ class KoreanToNodeIdMapper {
     };
   }
 
-  // 품질 점수 계산
-  calculateItemQuality(dbName, englishKeyword) {
-    let quality = 0;
-    
-    // 1. 정확한 매치 (최고 품질)
-    if (dbName === englishKeyword.toLowerCase()) {
-      quality = 1000;
-    }
-    // 2. 간단한 매치 (높은 품질)
-    else if (this.isSimpleMatch(dbName, englishKeyword)) {
-      quality = 800;
-    }
-    // 3. 복잡한 매치 (중간 품질)
-    else if (this.isComplexMatch(dbName, englishKeyword)) {
-      quality = 400;
-    }
-    // 4. 매우 구체적인 매치 (낮은 품질)
-    else {
-      quality = 100;
-    }
-    
-    // 이름 길이에 따른 페널티 (길수록 구체적)
-    const lengthPenalty = Math.min(dbName.length * 2, 100);
-    quality = Math.max(quality - lengthPenalty, 50);
-    
-    return quality;
-  }
-
-  // 간단한 매치인지 확인
-  isSimpleMatch(dbName, keyword) {
-    const simplePatterns = {
-      'wine': ['red_wine', 'white_wine', 'dry_wine'],
-      'beef': ['ground_beef', 'beef_steak', 'beef_roast'],
-      'chicken': ['chicken_breast', 'chicken_thigh', 'roast_chicken'],
-      'pork': ['pork_chop', 'pork_loin', 'ground_pork'],
-      'cheese': ['cheddar_cheese', 'mozzarella_cheese', 'cream_cheese'],
-      'fish': ['salmon_fillet', 'tuna_steak', 'white_fish']
-    };
-    
-    const patterns = simplePatterns[keyword.toLowerCase()] || [];
-    return patterns.some(pattern => dbName === pattern);
-  }
-
-  // 복잡한 매치인지 확인
-  isComplexMatch(dbName, keyword) {
-    const complexPatterns = {
-      'wine': ['chardonnay_wine', 'cabernet_wine', 'burgundy_wine', 'chianti_wine'],
-      'beef': ['ribeye_steak', 'sirloin_steak', 'beef_tenderloin'],
-      'chicken': ['chicken_wings', 'chicken_drumstick', 'chicken_cutlet'],
-      'pork': ['pork_shoulder', 'pork_belly', 'pork_tenderloin']
-    };
-    
-    const patterns = complexPatterns[keyword.toLowerCase()] || [];
-    return patterns.some(pattern => dbName.includes(pattern));
-  }
-
-  // 모든 주류 반환
-  getAllLiquors() {
-    const liquors = [];
-    for (const [name, nodeId] of this.liquorMap.entries()) {
-      liquors.push({
-        nodeId,
-        name,
-        type: 'liquor'
-      });
-    }
-    
-    // nodeId 순으로 정렬
-    return liquors.sort((a, b) => a.nodeId - b.nodeId);
-  }
-
-  // 모든 재료 반환
-  getAllIngredients() {
-    const ingredients = [];
-    for (const [name, nodeId] of this.ingredientMap.entries()) {
-      ingredients.push({
-        nodeId,
-        name,
-        type: 'ingredient'
-      });
-    }
-    
-    // nodeId 순으로 정렬
-    return ingredients.sort((a, b) => a.nodeId - b.nodeId);
-  }
-
   searchByKorean(koreanText, type = 'both') {
+    console.log(`🔍 Searching for Korean text: "${koreanText}" (type: ${type})`);
     const results = [];
     
-    // 1. 먼저 CSV 매핑에서 정확한 매치 찾기 (주류만)
+    // 1. CSV 매핑에서 정확한 매치 찾기 (주류만)
     if (type === 'liquor' || type === 'both') {
-      // 정확한 매치부터 찾기
+      // 정확한 매치
       if (this.koreanToEnglishMap.has(koreanText)) {
         const englishName = this.koreanToEnglishMap.get(koreanText);
         const nodeId = this.liquorMap.get(englishName.toLowerCase());
@@ -298,10 +333,11 @@ class KoreanToNodeIdMapper {
             priority: 1000,
             quality: 1000
           });
+          console.log(`  ✅ Found exact CSV match: ${englishName} → ${nodeId}`);
         }
       }
       
-      // 부분 매치 찾기
+      // 부분 매치
       for (const [korean, english] of this.koreanToEnglishMap.entries()) {
         if (korean.includes(koreanText) || koreanText.includes(korean)) {
           const nodeId = this.liquorMap.get(english.toLowerCase());
@@ -315,29 +351,30 @@ class KoreanToNodeIdMapper {
               priority: 500,
               quality: 500
             });
+            console.log(`  ✅ Found partial CSV match: ${english} → ${nodeId}`);
           }
         }
       }
     }
 
-    // 2. 기존 매핑 방식으로 보완
+    // 2. 기존 매핑 방식
     const mappings = type === 'liquor' ? { liquors: this.koreanMappings.liquors } : 
                     type === 'ingredient' ? { ingredients: this.koreanMappings.ingredients } :
                     this.koreanMappings;
 
     for (const [category, categoryMappings] of Object.entries(mappings)) {
       const dataMap = category === 'liquors' ? this.liquorMap : this.ingredientMap;
+      console.log(`  🔍 Searching in ${category} with ${dataMap.size} items`);
       
       for (const [koreanName, englishNames] of Object.entries(categoryMappings)) {
         if (koreanText.includes(koreanName) || koreanName.includes(koreanText)) {
+          console.log(`    ✅ Korean match found: "${koreanName}" → ${englishNames}`);
           
-          // 각 영어 키워드별로 매칭 결과 수집
           for (const englishName of englishNames) {
             const categoryResults = [];
             
             for (const [dbName, nodeId] of dataMap.entries()) {
               if (dbName.includes(englishName.toLowerCase())) {
-                // 품질 점수 계산
                 const quality = this.calculateItemQuality(dbName, englishName);
                 
                 categoryResults.push({
@@ -353,15 +390,14 @@ class KoreanToNodeIdMapper {
               }
             }
             
-            // 각 키워드별로 상위 N개만 선택
             const topResults = categoryResults
               .sort((a, b) => b.quality - a.quality)
               .slice(0, 8);
             
-            // 중복 제거하고 추가
             for (const result of topResults) {
               if (!results.find(r => r.nodeId === result.nodeId)) {
                 results.push(result);
+                console.log(`      ✅ Added: ${result.name} → ${result.nodeId} (quality: ${result.quality})`);
               }
             }
           }
@@ -369,39 +405,99 @@ class KoreanToNodeIdMapper {
       }
     }
 
-    // 최종 정렬 및 제한
+    // 정렬
     results.sort((a, b) => {
-      // 1. 품질 점수 우선
       if (a.quality !== b.quality) {
         return b.quality - a.quality;
       }
-      // 2. 이름 길이 (짧을수록 일반적)
       return a.name.length - b.name.length;
     });
 
-    console.log(`🔍 Korean search for "${koreanText}": found ${results.length} results`);
-    
-    // 상위 결과만 로깅
+    console.log(`🎯 Total results found: ${results.length}`);
     const topResults = results.slice(0, 15);
     topResults.forEach((result, i) => {
       console.log(`  ${i+1}. ${result.name} (${result.matchType}, quality: ${result.quality}) → node_id: ${result.nodeId}`);
     });
 
-    if (results.length > 15) {
-      console.log(`  ... and ${results.length - 15} more results (showing top 15)`);
-    }
-
-    // 최대 30개로 제한
     return results.slice(0, 30);
   }
 
-  // 전체 데이터에서 해당 카테고리 모든 아이템 반환
+  calculateItemQuality(dbName, englishKeyword) {
+    let quality = 0;
+    
+    if (dbName === englishKeyword.toLowerCase()) {
+      quality = 1000;
+    } else if (this.isSimpleMatch(dbName, englishKeyword)) {
+      quality = 800;
+    } else if (this.isComplexMatch(dbName, englishKeyword)) {
+      quality = 400;
+    } else {
+      quality = 100;
+    }
+    
+    const lengthPenalty = Math.min(dbName.length * 2, 100);
+    quality = Math.max(quality - lengthPenalty, 50);
+    
+    return quality;
+  }
+
+  isSimpleMatch(dbName, keyword) {
+    const simplePatterns = {
+      'wine': ['red_wine', 'white_wine', 'dry_wine'],
+      'beef': ['ground_beef', 'beef_steak', 'beef_roast'],
+      'chicken': ['chicken_breast', 'chicken_thigh', 'roast_chicken'],
+      'pork': ['pork_chop', 'pork_loin', 'ground_pork'],
+      'cheese': ['cheddar_cheese', 'mozzarella_cheese', 'cream_cheese'],
+      'fish': ['salmon_fillet', 'tuna_steak', 'white_fish']
+    };
+    
+    const patterns = simplePatterns[keyword.toLowerCase()] || [];
+    return patterns.some(pattern => dbName === pattern);
+  }
+
+  isComplexMatch(dbName, keyword) {
+    const complexPatterns = {
+      'wine': ['chardonnay_wine', 'cabernet_wine', 'burgundy_wine', 'chianti_wine'],
+      'beef': ['ribeye_steak', 'sirloin_steak', 'beef_tenderloin'],
+      'chicken': ['chicken_wings', 'chicken_drumstick', 'chicken_cutlet'],
+      'pork': ['pork_shoulder', 'pork_belly', 'pork_tenderloin']
+    };
+    
+    const patterns = complexPatterns[keyword.toLowerCase()] || [];
+    return patterns.some(pattern => dbName.includes(pattern));
+  }
+
+  getAllLiquors() {
+    const liquors = [];
+    for (const [name, nodeId] of this.liquorMap.entries()) {
+      liquors.push({
+        nodeId,
+        name,
+        type: 'liquor'
+      });
+    }
+    
+    return liquors.sort((a, b) => a.nodeId - b.nodeId);
+  }
+
+  getAllIngredients() {
+    const ingredients = [];
+    for (const [name, nodeId] of this.ingredientMap.entries()) {
+      ingredients.push({
+        nodeId,
+        name,
+        type: 'ingredient'
+      });
+    }
+    
+    return ingredients.sort((a, b) => a.nodeId - b.nodeId);
+  }
+
   getAllMatchingItems(koreanText, type) {
     const results = [];
     const mappings = type === 'liquor' ? this.koreanMappings.liquors : this.koreanMappings.ingredients;
     const dataMap = type === 'liquor' ? this.liquorMap : this.ingredientMap;
     
-    // 해당 한국어에 매칭되는 영어 키워드들 찾기
     const matchingKeywords = [];
     
     for (const [koreanName, englishNames] of Object.entries(mappings)) {
@@ -410,7 +506,6 @@ class KoreanToNodeIdMapper {
       }
     }
     
-    // 모든 데이터에서 키워드에 해당하는 아이템들 찾기
     for (const [dbName, nodeId] of dataMap.entries()) {
       for (const keyword of matchingKeywords) {
         if (dbName.includes(keyword.toLowerCase())) {
@@ -430,7 +525,6 @@ class KoreanToNodeIdMapper {
     return results;
   }
 
-  // 최적의 페어링 조합 찾기
   async getBestPairingCombination(koreanLiquor, koreanIngredient) {
     const liquorResults = this.searchByKorean(koreanLiquor, 'liquor');
     const ingredientResults = this.searchByKorean(koreanIngredient, 'ingredient');

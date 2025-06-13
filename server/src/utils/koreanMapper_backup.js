@@ -6,13 +6,10 @@ class KoreanToNodeIdMapper {
     this.nodesData = null;
     this.liquorMap = new Map();
     this.ingredientMap = new Map();
-    this.koreanToEnglishMap = new Map(); // CSV 매핑
-    
-    console.log('🚀 Initializing Korean Mapper (CSV-only mode)...');
+    this.koreanToEnglishMap = new Map(); // 새로 추가: CSV 매핑
     this.koreanMappings = this.loadKoreanMappings();
-    this.loadKoreanLiquorMapping(); // CSV 로드
-    this.loadNodesData(); // fallback 없이 CSV만 사용
-    console.log('✅ Korean Mapper initialization complete');
+    this.loadKoreanLiquorMapping(); // 새로 추가: CSV 로드
+    this.loadNodesData();
   }
 
   loadKoreanLiquorMapping() {
@@ -20,7 +17,7 @@ class KoreanToNodeIdMapper {
       const csvPath = path.join(__dirname, '../../English-Korean_Liquor_Names.csv');
       
       if (!fs.existsSync(csvPath)) {
-        console.warn('⚠️ Korean liquor mapping CSV file not found (optional feature)');
+        console.warn('Korean liquor mapping CSV file not found');
         return;
       }
       
@@ -40,45 +37,22 @@ class KoreanToNodeIdMapper {
         }
       });
       
-      console.log(`✅ Loaded ${this.koreanToEnglishMap.size} Korean liquor mappings from CSV`);
+      console.log(`Loaded ${this.koreanToEnglishMap.size} Korean liquor mappings from CSV`);
     } catch (error) {
-      console.error('❌ Error loading Korean liquor mapping:', error);
+      console.error('Error loading Korean liquor mapping:', error);
     }
   }
 
   loadNodesData() {
-    // Docker 환경과 로컬 환경 모두 지원하는 경로들
-    const possiblePaths = [
-      path.join(__dirname, '../../../ai-server/dataset/nodes_191120_updated.csv'), // 로컬 환경
-      path.join('/ai-server/dataset/nodes_191120_updated.csv'), // Docker 환경 (볼륨 마운트)
-      path.join(__dirname, '../../dataset/nodes_191120_updated.csv'), // 대체 경로
-      path.join(process.cwd(), 'ai-server/dataset/nodes_191120_updated.csv') // 프로젝트 루트 기준
-    ];
-
-    let csvPath = null;
-    let csvData = null;
-
-    // 가능한 경로들을 순서대로 시도
-    for (const testPath of possiblePaths) {
-      if (fs.existsSync(testPath)) {
-        csvPath = testPath;
-        console.log(`✅ Found CSV file at: ${csvPath}`);
-        break;
-      } else {
-        console.log(`❌ CSV file not found at: ${testPath}`);
-      }
-    }
-    
-    if (!csvPath) {
-      console.error('❌ Tried all possible paths for nodes CSV file:');
-      possiblePaths.forEach(p => console.error(`   - ${p}`));
-      throw new Error(`❌ Critical: Required CSV file not found in any of the expected locations`);
-    }
-    
     try {
-      console.log(`📁 Loading nodes data from: ${csvPath}`);
+      const csvPath = path.join(__dirname, '../../../ai-server/dataset/nodes_191120_updated.csv');
       
-      csvData = fs.readFileSync(csvPath, 'utf-8');
+      if (!fs.existsSync(csvPath)) {
+        console.warn('CSV file not found, using fallback data');
+        return;
+      }
+      
+      const csvData = fs.readFileSync(csvPath, 'utf-8');
       const lines = csvData.split('\n').slice(1); // 헤더 제거
       
       lines.forEach(line => {
@@ -103,16 +77,130 @@ class KoreanToNodeIdMapper {
         }
       });
       
-      console.log(`✅ Successfully loaded ${this.liquorMap.size} liquors and ${this.ingredientMap.size} ingredients from CSV`);
-      
-      if (this.liquorMap.size === 0 || this.ingredientMap.size === 0) {
-        throw new Error('❌ No valid data found in CSV file - system cannot function');
-      }
-      
+      console.log(`Loaded ${this.liquorMap.size} liquors and ${this.ingredientMap.size} ingredients from CSV`);
     } catch (error) {
-      console.error('❌ Critical error loading nodes data:', error);
-      throw new Error(`❌ Failed to load required CSV data: ${error.message}`);
+      console.error('Error loading nodes data:', error);
+      // 오류 발생 시 기본 데이터로 대체
+      this.loadFallbackData();
     }
+  }
+
+  loadFallbackData() {
+    // CSV 로드 실패 시 기본 데이터
+    const fallbackData = {
+      liquors: {
+        39: 'absinthe',
+        40: 'absolut_citron_vodka',
+        75: 'ale',
+        96: 'almond_flavored_liqueur',
+        100: 'almond_liqueur',
+        120: 'amaretto_liqueur',
+        122: 'amber_beer',
+        123: 'amber_rum',
+        159: 'apple_brandy',
+        167: 'apple_liqueur',
+        177: 'apricot_brandy',
+        184: 'apricot_liqueur',
+        194: 'armagnac',
+        311: 'banana_liqueur',
+        423: 'beer',
+        519: 'blackberry_brandy',
+        521: 'blackberry_liqueur',
+        524: 'blackberry_wine',
+        652: 'bourbon',
+        653: 'bourbon_whiskey',
+        662: 'brandy',
+        755: 'brut_champagne',
+        777: 'burgundy_wine',
+        827: 'cabernet_sauvignon_wine',
+        1069: 'champagne',
+        1079: 'chardonnay_wine',
+        1112: 'cherry_brandy',
+        1115: 'cherry_flavored_liqueur',
+        1137: 'chianti_wine',
+        1246: 'chinese_rice_wine',
+        1251: 'chinese_wine',
+        1317: 'chocolate_liqueur',
+        1361: 'cider',
+        1441: 'coconut_liqueur',
+        1448: 'coconut_rum',
+        1462: 'coffee_flavored_liqueur',
+        1465: 'coffee_liqueur',
+        1467: 'cognac',
+        1468: 'cointreau_liqueur',
+        1627: 'corona_beer',
+        1830: 'dark_rum',
+        1821: 'dark_jamaican_rum',
+        2102: 'dry_champagne',
+        2112: 'dry_gin',
+        2119: 'dry_marsala_wine',
+        2135: 'dry_red_wine',
+        2149: 'dry_vermouth',
+        2151: 'dry_white_vermouth',
+        2152: 'dry_white_wine',
+        2153: 'dry_wine',
+        2204: 'elderflower_liqueur',
+        2413: 'framboise_liqueur'
+      },
+      ingredients: {
+        88: 'almond',
+        158: 'apple',
+        175: 'apricot',
+        223: 'avocado',
+        302: 'banana',
+        328: 'basil',
+        361: 'beef',
+        518: 'blackberry',
+        547: 'blueberry',
+        668: 'bread',
+        781: 'butter',
+        805: 'buttermilk',
+        823: 'cabbage',
+        885: 'candy_bar',
+        966: 'caper',
+        1005: 'carrot',
+        1014: 'cashew_nut',
+        1041: 'celery',
+        1083: 'cheddar_cheese',
+        1089: 'cheese',
+        1111: 'cherry',
+        1125: 'cherry_tomato',
+        1138: 'chicken',
+        1204: 'chickpea',
+        1266: 'chocolate',
+        1368: 'cinnamon',
+        1458: 'coffee',
+        1595: 'corn',
+        1598: 'corn_chip',
+        1631: 'cottage_cheese',
+        1645: 'crab',
+        1664: 'cranberry',
+        1681: 'cream',
+        1682: 'cream_cheese',
+        1768: 'cucumber',
+        1845: 'date',
+        1895: 'dill',
+        2188: 'egg',
+        2200: 'eggplant',
+        2320: 'feta_cheese',
+        2331: 'fig',
+        2364: 'fish',
+        2396: 'flour',
+        2430: 'french_fry',
+        2547: 'fresh_pea',
+        2591: 'fresh_tomato'
+      }
+    };
+
+    for (const [nodeId, name] of Object.entries(fallbackData.liquors)) {
+      this.liquorMap.set(name.toLowerCase(), parseInt(nodeId));
+    }
+
+    for (const [nodeId, name] of Object.entries(fallbackData.ingredients)) {
+      this.ingredientMap.set(name.toLowerCase(), parseInt(nodeId));
+    }
+
+    console.log(`Loaded fallback data: ${this.liquorMap.size} liquors, ${this.ingredientMap.size} ingredients`);
   }
 
   loadKoreanMappings() {
@@ -140,7 +228,6 @@ class KoreanToNodeIdMapper {
       ingredients: {
         "치즈": ["cheese", "cheddar", "mozzarella", "brie", "feta", "cottage"],
         "고기": ["beef", "pork", "chicken", "meat"],
-        "치킨": ["chicken"],
         "생선": ["fish", "salmon", "tuna"],
         "과일": ["apple", "orange", "lemon", "lime", "berry"],
         "사과": ["apple"],
@@ -193,8 +280,9 @@ class KoreanToNodeIdMapper {
     };
   }
 
-  // 품질 점수 계산
+  // *** 새로운 메서드: 품질 점수 계산 ***
   calculateItemQuality(dbName, englishKeyword) {
+    // 기본 품질 점수
     let quality = 0;
     
     // 1. 정확한 매치 (최고 품질)
@@ -249,7 +337,7 @@ class KoreanToNodeIdMapper {
     return patterns.some(pattern => dbName.includes(pattern));
   }
 
-  // 모든 주류 반환
+  // 🆕 새로 추가된 메서드: 모든 주류 반환
   getAllLiquors() {
     const liquors = [];
     for (const [name, nodeId] of this.liquorMap.entries()) {
@@ -264,7 +352,7 @@ class KoreanToNodeIdMapper {
     return liquors.sort((a, b) => a.nodeId - b.nodeId);
   }
 
-  // 모든 재료 반환
+  // 🆕 새로 추가된 메서드: 모든 재료 반환
   getAllIngredients() {
     const ingredients = [];
     for (const [name, nodeId] of this.ingredientMap.entries()) {
@@ -320,7 +408,7 @@ class KoreanToNodeIdMapper {
       }
     }
 
-    // 2. 기존 매핑 방식으로 보완
+    // 2. 기존 매핑 방식으로 보완 - *** 개선된 버전 ***
     const mappings = type === 'liquor' ? { liquors: this.koreanMappings.liquors } : 
                     type === 'ingredient' ? { ingredients: this.koreanMappings.ingredients } :
                     this.koreanMappings;
@@ -331,7 +419,7 @@ class KoreanToNodeIdMapper {
       for (const [koreanName, englishNames] of Object.entries(categoryMappings)) {
         if (koreanText.includes(koreanName) || koreanName.includes(koreanText)) {
           
-          // 각 영어 키워드별로 매칭 결과 수집
+          // *** 각 영어 키워드별로 매칭 결과 수집 ***
           for (const englishName of englishNames) {
             const categoryResults = [];
             
@@ -348,15 +436,15 @@ class KoreanToNodeIdMapper {
                   matchType: dbName === englishName.toLowerCase() ? 'exact_mapping' : 'partial_mapping',
                   priority: quality,
                   quality: quality,
-                  keyword: englishName
+                  keyword: englishName // 디버깅용
                 });
               }
             }
             
-            // 각 키워드별로 상위 N개만 선택
+            // *** 각 키워드별로 상위 N개만 선택 ***
             const topResults = categoryResults
               .sort((a, b) => b.quality - a.quality)
-              .slice(0, 8);
+              .slice(0, 8); // 키워드당 최대 8개
             
             // 중복 제거하고 추가
             for (const result of topResults) {
@@ -369,7 +457,7 @@ class KoreanToNodeIdMapper {
       }
     }
 
-    // 최종 정렬 및 제한
+    // *** 최종 정렬 및 제한 ***
     results.sort((a, b) => {
       // 1. 품질 점수 우선
       if (a.quality !== b.quality) {
@@ -379,9 +467,9 @@ class KoreanToNodeIdMapper {
       return a.name.length - b.name.length;
     });
 
-    console.log(`🔍 Korean search for "${koreanText}": found ${results.length} results`);
+    console.log(`Korean search for "${koreanText}": found ${results.length} results (filtered from potentially thousands)`);
     
-    // 상위 결과만 로깅
+    // *** 상위 결과만 로깅 ***
     const topResults = results.slice(0, 15);
     topResults.forEach((result, i) => {
       console.log(`  ${i+1}. ${result.name} (${result.matchType}, quality: ${result.quality}) → node_id: ${result.nodeId}`);
@@ -391,11 +479,11 @@ class KoreanToNodeIdMapper {
       console.log(`  ... and ${results.length - 15} more results (showing top 15)`);
     }
 
-    // 최대 30개로 제한
+    // *** 최대 30개로 제한 ***
     return results.slice(0, 30);
   }
 
-  // 전체 데이터에서 해당 카테고리 모든 아이템 반환
+  // *** 새로운 메서드: 전체 데이터에서 해당 카테고리 모든 아이템 반환 ***
   getAllMatchingItems(koreanText, type) {
     const results = [];
     const mappings = type === 'liquor' ? this.koreanMappings.liquors : this.koreanMappings.ingredients;
@@ -430,7 +518,7 @@ class KoreanToNodeIdMapper {
     return results;
   }
 
-  // 최적의 페어링 조합 찾기
+  // 새로운 메서드 추가: 최적의 페어링 조합 찾기
   async getBestPairingCombination(koreanLiquor, koreanIngredient) {
     const liquorResults = this.searchByKorean(koreanLiquor, 'liquor');
     const ingredientResults = this.searchByKorean(koreanIngredient, 'ingredient');
@@ -449,8 +537,8 @@ class KoreanToNodeIdMapper {
     return {
       success: true,
       combinations: {
-        liquors: liquorResults,
-        ingredients: ingredientResults
+        liquors: liquorResults, // 이미 필터링된 결과
+        ingredients: ingredientResults // 이미 필터링된 결과
       }
     };
   }

@@ -42,7 +42,6 @@ services:
       - AI_SERVER_URL=http://ai-model:8000
     volumes:
       - ./server:/app
-      - ./ai-server/dataset:/ai-server/dataset
       - /app/node_modules
     networks:
       - app-network

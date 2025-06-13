@@ -18,14 +18,6 @@ class KoreanPairingService {
         })
       });
 
-      // 응답이 JSON이 아닐 경우 처리
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        throw new Error('서버에서 올바르지 않은 응답을 받았습니다');
-      }
-
       const data = await response.json();
       
       if (!response.ok) {
@@ -52,14 +44,6 @@ class KoreanPairingService {
           limit
         })
       });
-
-      // 응답이 JSON이 아닐 경우 처리
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        throw new Error('서버에서 올바르지 않은 응답을 받았습니다');
-      }
 
       const data = await response.json();
       
@@ -88,14 +72,6 @@ class KoreanPairingService {
         })
       });
 
-      // 응답이 JSON이 아닐 경우 처리
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        throw new Error('서버에서 올바르지 않은 응답을 받았습니다');
-      }
-
       const data = await response.json();
       
       if (!response.ok) {
@@ -115,14 +91,6 @@ class KoreanPairingService {
       const response = await fetch(
         `${this.baseURL}/pairing/korean/search?query=${encodeURIComponent(query)}&type=${type}`
       );
-
-      // 응답이 JSON이 아닐 경우 처리
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        throw new Error('서버에서 올바르지 않은 응답을 받았습니다');
-      }
 
       const data = await response.json();
       
