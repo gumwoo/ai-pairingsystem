@@ -298,8 +298,8 @@ async def startup_event():
         idx_to_lid = {v: k for k, v in lid_to_idx.items()}
         idx_to_iid = {v: k for k, v in iid_to_idx.items()}
 
-        avg_scores = pd.read_csv("./liquor_scores.csv")
-        avg_scores = avg_scores.set_index('node_id')['avg_score'].to_dict()
+        avg_scores = pd.read_csv("./liquor_recommendations.csv")
+        avg_scores = avg_scores.set_index('node_id')['score'].to_dict()
         
         print("Loading edge indices...")
         edge_type_map = {
@@ -358,7 +358,17 @@ async def get_score_only(request: ScoreOnlyRequest):
         # Map IDs to indices
         liquor_idx = lid_to_idx[request.liquor_id]
         ingredient_idx = iid_to_idx[request.ingredient_id]
+
+        user_tensor = torch.tensor([liquor_idx])
+        item_tensor = torch.tensor([ingredient_idx])
+
+        with torch.no_grad():
+            score = model(user_tensor, item_tensor)
         
+        avg_score = avg_scores.get(request.liquor_id, 0.0)
+        score = score + 5.5 - avg_score
+        score = torch.sigmoid(score) * 100
+
         # 🎯 Raw score 추출 및 절대적 평가 기준 적용
         raw_score = get_raw_score_from_model(liquor_idx, ingredient_idx)
         absolute_score = normalize_raw_score_to_100(raw_score)
