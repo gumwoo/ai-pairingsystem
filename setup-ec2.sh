@@ -36,9 +36,10 @@ echo "✅ Environment variables configured"
 # Docker 설치 확인
 if ! command -v docker &> /dev/null; then
     echo "📦 Installing Docker..."
-    sudo yum update -y
-    sudo yum install -y docker
-    sudo service docker start
+    sudo apt-get update
+    sudo apt-get install -y docker.io
+    sudo systemctl start docker
+    sudo systemctl enable docker
     sudo usermod -a -G docker $USER
 fi
 
@@ -50,4 +51,4 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo "🚀 Starting deployment..."
-./deploy-ec2.sh
+docker-compose -f docker-compose.ec2.yml up -d --build
