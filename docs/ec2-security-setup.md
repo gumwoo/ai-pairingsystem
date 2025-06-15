@@ -45,8 +45,8 @@
 sudo netstat -tlnp | grep -E ':(5000|8000|3307)'
 
 # 외부에서 테스트
-curl http://15.165.17.165:5000/
-curl http://15.165.17.165:8000/health
+curl http://3.39.2.204:5000/
+curl http://3.39.2.204:8000/health
 ```
 
 ### 방화벽 확인 (Ubuntu)

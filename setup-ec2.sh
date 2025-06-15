@@ -22,7 +22,7 @@ DB_PASSWORD=8912@28DP
 DB_NAME=ai_pairing_db
 
 # CORS (Vercel + EC2 + 로컬 개발)
-CORS_ORIGIN=https://ai-pairingsystem.vercel.app,http://15.165.17.165:5000,http://localhost:3000,http://localhost:3004
+CORS_ORIGIN=https://ai-pairingsystem.vercel.app,http://3.39.2.204:5000,http://localhost:3000,http://localhost:3004
 
 # AI 서버 Docker 컨테이너 연결
 AI_SERVER_URL=http://ai-model:8000

@@ -39,7 +39,7 @@ services:
       - DB_NAME=ai_pairing_db
       - AI_SERVER_URL=http://ai-model:8000
       - CLIENT_URL=https://ai-pairingsystem.vercel.app
-      - CORS_ORIGIN=https://ai-pairingsystem.vercel.app,http://15.165.17.165:5000,http://localhost:3000,http://localhost:3004
+      - CORS_ORIGIN=https://ai-pairingsystem.vercel.app,http://3.39.2.204:5000,http://localhost:3000,http://localhost:3004
       - JWT_SECRET=your-secret-jwt-key
       - OPENAI_API_KEY=your-openai-api-key-here
     volumes:

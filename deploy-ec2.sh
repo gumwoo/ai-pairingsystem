@@ -21,8 +21,8 @@ sleep 10
 docker logs ai-pairing-server --tail 20
 
 echo "🎉 EC2 deployment completed!"
-echo "📍 API Server: http://15.165.17.165:5000"
-echo "📍 AI Model Server: http://15.165.17.165:8000"
+echo "📍 API Server: http://3.39.2.204:5000"
+echo "📍 AI Model Server: http://3.39.2.204:8000"
 echo "📍 Frontend: https://ai-pairingsystem.vercel.app"
 echo ""
 echo "🔧 Don't forget to:"

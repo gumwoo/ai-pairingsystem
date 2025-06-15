@@ -10,7 +10,7 @@
 Settings → Environment Variables에서 다음 변수들을 추가/수정:
 
 ```
-REACT_APP_API_URL=http://15.165.17.165:5000/api
+REACT_APP_API_URL=http://3.39.2.204:5000/api
 REACT_APP_ENV=production
 ```
 
@@ -37,7 +37,7 @@ git push
 ### Option B: 빌드 시 환경변수 설정
 Vercel 빌드 설정에서 Build Command 수정:
 ```bash
-REACT_APP_API_URL=http://15.165.17.165:5000/api npm run build
+REACT_APP_API_URL=http://3.39.2.204:5000/api npm run build
 ```
 
 ## 주의사항
