@@ -1,0 +1,4 @@
+Host aws-server
+    HostName 43.201.160.196
+    User ubuntu
+    IdentityFile C:/Users/USER/Downloads/insta-clone.pem

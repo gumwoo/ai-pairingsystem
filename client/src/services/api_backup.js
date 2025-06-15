@@ -1,20 +1,12 @@
 import axios from 'axios';
 
-// API base URL - 환경변수 또는 기본값 사용
-const API_BASE_URL = process.env.REACT_APP_API_URL || (
-  process.env.NODE_ENV === 'production' 
-    ? 'https://your-backend-domain.com/api'  // 실제 백엔드 도메인으로 변경 필요
-    : '/api'
-);
-
 // Create an axios instance with default configs
 const API = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true,
+  }
 });
 
 // Add interceptor to handle auth token

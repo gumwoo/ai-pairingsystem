@@ -30,18 +30,10 @@ const setupSwagger = require('./config/swagger');
 const app = express();
 const PORT = process.env.PORT || 5004;
 
-// CORS 설정 업데이트 - 환경변수로 처리
-const corsOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',')
-  : ['http://localhost:3004', 'http://localhost:3000'];
-
-console.log('Allowed CORS origins:', corsOrigins);
-
+// CORS 설정 업데이트
 app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: 'http://localhost:3004', // 프론트엔드 주소
+  credentials: true
 }));
 app.use(helmet());
 app.use(compression());

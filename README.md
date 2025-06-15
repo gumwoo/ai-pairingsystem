@@ -88,17 +88,35 @@ ai-pairing/
    npm start
    ```
 
-### Docker 배포
+## 배포 구조
 
-1. 컨테이너 빌드 및 시작
-   ```
-   docker-compose up -d
-   ```
+### 프론트엔드 (Vercel)
+- **URL**: https://ai-pairingsystem.vercel.app/
+- **배포 플랫폼**: Vercel
+- **자동 배포**: GitHub 연동을 통한 CI/CD
 
-2. 서비스 접근
-   - 프론트엔드: http://localhost
-   - 백엔드 API: http://localhost:5000
-   - AI 모델 API: http://localhost:8000
+### 백엔드 서비스 (Docker)
+- **API 서버**: http://localhost:5000
+- **AI 모델 서버**: http://localhost:8000  
+- **데이터베이스**: MySQL (Docker 컨테이너)
+- **배포**: Docker Compose를 통한 컨테이너화
+
+### 개발 환경 설정
+
+#### 로컬 개발
+```bash
+# 백엔드 및 AI 서비스 시작 (Docker)
+docker-compose up -d
+
+# 프론트엔드 개발 서버 (선택사항 - Vercel 사용 시 불필요)
+cd client
+npm start  # http://localhost:3004
+```
+
+#### 프로덕션 배포
+- **프론트엔드**: Vercel에서 자동 배포
+- **백엔드**: Docker Compose로 서버 배포
+- **환경변수**: 각 서비스별 환경변수 설정 필요
 
 ## 데이터 소스
 
