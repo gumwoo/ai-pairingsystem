@@ -18,7 +18,7 @@
 
 - **프론트엔드**: React
 - **백엔드**: Express.js (Node.js)
-- **데이터베이스**: MongoDB
+- **데이터베이스**: Mysql
 - **AI 모델**: FlavorDiffusion (GNN 기반 모델)
 - **배포**: Docker 컨테이너 및 AWS
 
@@ -64,29 +64,6 @@ ai-pairing/
 - MongoDB
 - Docker 및 Docker Compose (컨테이너화된 배포용)
 
-### 설치
-
-1. 리포지토리 복제
-   ```
-   git clone https://github.com/gumwoo/ai-pairingsystem.git
-   cd ai-pairingsystem
-   ```
-
-2. 의존성 설치
-   ```
-   npm run install-all
-   ```
-
-3. 환경 변수 설정
-   ```
-   cp server/.env.example server/.env
-   # .env 파일을 설정에 맞게 편집
-   ```
-
-4. 개발 서버 시작
-   ```
-   npm start
-   ```
 
 ## 배포 구조
 
@@ -134,16 +111,3 @@ FlavorDiffusion 모델은 주류, 재료 및 그들이 공유하는 화합물의
 cd ai-server
 python model/train.py
 ```
-
-## 기여하기
-
-기여는 언제나 환영합니다! Pull Request를 제출해 주세요.
-
-## 라이센스
-
-이 프로젝트는 MIT 라이센스에 따라 라이센스가 부여됩니다 - 자세한 내용은 LICENSE 파일을 참조하세요.
-
-## 감사의 말
-
-- 화합물 데이터를 제공한 FlavorDB
-- 개발에 도움을 준 모든 기여자들
